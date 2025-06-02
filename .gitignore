@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+*.log
+npm-lock.*
+yarn-lock.*
+pnpm-lock.*
+
+*.db
+*.sqlite
+
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
