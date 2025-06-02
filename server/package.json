@@ -1,0 +1,26 @@
+{
+  "name": "the-manager-server",
+  "version": "1.0.0",
+  "description": "A simple football management game (Server Side)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx --watch src/index.ts"
+  },
+  "keywords": [
+    "Node",
+    "Typescript",
+    "SQLite"
+  ],
+  "author": "Victor Olimpio Vasconcelos",
+  "license": "GPL-3.0-only",
+  "packageManager": "pnpm@10.11.1",
+  "devDependencies": {
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.1",
+    "@types/node": "^22.15.29",
+    "fastify": "^5.3.3"
+  }
+}
