@@ -82,7 +82,7 @@ CREATE TABLE competition (
   reputation INTEGER NOT NULL,
   nation_id INTEGER NULL,
   confederation_id INTEGER NULL,
-  has_group_stage INTEGER NOT NULL DEFAULT 0
+  has_group_stage INTEGER NOT NULL DEFAULT 0,
   has_knockout_stage INTEGER NOT NULL DEFAULT 0,
   knockout_legs TEXT NOT NULL CHECK(knockout_legs IN ('single_leg', 'two_legs')),
   competition_logo BLOB NOT NULL,
