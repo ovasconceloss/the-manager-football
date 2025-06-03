@@ -4,7 +4,8 @@
   "description": "A simple football management game (Server Side)",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx --watch src/index.ts"
+    "dev": "tsx --watch src/index.ts",
+    "seed": "tsx src/scripts/databaseSeed.ts"
   },
   "keywords": [
     "Node",
