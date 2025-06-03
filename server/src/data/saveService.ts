@@ -32,6 +32,27 @@ class SaveService {
             throw new AppError("Failed to obtain the save base path.", 500);
         }
     }
+
+    private static createSaveName(): string {
+        try {
+            const dateObject = new Date();
+            const [year, month, day, time] = [
+                dateObject.getFullYear(),
+                String(dateObject.getMonth() + 1).padStart(2, "0"),
+                String(dateObject.getDate() + 1).padStart(2, "0"),
+                dateObject.getTime()
+            ];
+
+            return `save_${year}-${month}-${day}-${time}.tm`;
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                fastify.log.error("Failure to create save name:", err.message);
+            } else {
+                fastify.log.error("Unknown error creating save name");
+            }
+            throw new AppError("Failed to create save name.", 500);
+        }
+    }
 }
 
 export default SaveService;
