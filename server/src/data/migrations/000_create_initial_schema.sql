@@ -1042,61 +1042,133 @@ INSERT INTO attribute_type (name, category) VALUES
 ('Goalkeeping', 'goalkeeper');         -- This includes reflexes, goalkeeping, positioning, etc.
 
 -- Inserting cities for Portugal
-INSERT INTO city (nation_id, name) VALUES
+INSERT OR IGNORE INTO city (nation_id, name) VALUES
 ((SELECT id FROM nation WHERE name = 'Portugal'), 'Lisbon'),
 ((SELECT id FROM nation WHERE name = 'Portugal'), 'Porto'),
 ((SELECT id FROM nation WHERE name = 'Portugal'), 'Braga'),
 ((SELECT id FROM nation WHERE name = 'Portugal'), 'Guimarães'),
-((SELECT id FROM nation WHERE name = 'Portugal'), 'Coimbra');
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Vila Nova de Famalicão'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Vila do Conde'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Barcelos'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Chaves'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Portimão'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Ponta Delgada'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estoril'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Vizela'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Arouca'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Funchal'),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Paços de Ferreira');
 
 -- Inserting cities for Spain
-INSERT INTO city (nation_id, name) VALUES
+INSERT OR IGNORE INTO city (nation_id, name) VALUES
 ((SELECT id FROM nation WHERE name = 'Spain'), 'Madrid'),
 ((SELECT id FROM nation WHERE name = 'Spain'), 'Barcelona'),
 ((SELECT id FROM nation WHERE name = 'Spain'), 'Seville'),
 ((SELECT id FROM nation WHERE name = 'Spain'), 'Valencia'),
-((SELECT id FROM nation WHERE name = 'Spain'), 'Bilbao');
+((SELECT id FROM nation WHERE name = 'Spain'), 'Villarreal'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'San Sebastián'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Bilbao'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Vigo'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Getafe'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Pamplona'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Vitoria-Gasteiz'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Granada'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Palma'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Cádiz'),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Elche');
 
 -- Inserting cities for France
-INSERT INTO city (nation_id, name) VALUES
+INSERT OR IGNORE INTO city (nation_id, name) VALUES
 ((SELECT id FROM nation WHERE name = 'France'), 'Paris'),
 ((SELECT id FROM nation WHERE name = 'France'), 'Marseille'),
 ((SELECT id FROM nation WHERE name = 'France'), 'Lyon'),
+((SELECT id FROM nation WHERE name = 'France'), 'Monaco'),
+((SELECT id FROM nation WHERE name = 'France'), 'Lille'),
+((SELECT id FROM nation WHERE name = 'France'), 'Lens'),
+((SELECT id FROM nation WHERE name = 'France'), 'Rennes'),
 ((SELECT id FROM nation WHERE name = 'France'), 'Nice'),
-((SELECT id FROM nation WHERE name = 'France'), 'Lille');
+((SELECT id FROM nation WHERE name = 'France'), 'Nantes'),
+((SELECT id FROM nation WHERE name = 'France'), 'Strasbourg'),
+((SELECT id FROM nation WHERE name = 'France'), 'Montpellier'),
+((SELECT id FROM nation WHERE name = 'France'), 'Toulouse'),
+((SELECT id FROM nation WHERE name = 'France'), 'Brest'),
+((SELECT id FROM nation WHERE name = 'France'), 'Clermont-Ferrand'),
+((SELECT id FROM nation WHERE name = 'France'), 'Reims'),
+((SELECT id FROM nation WHERE name = 'France'), 'Lorient'),
+((SELECT id FROM nation WHERE name = 'France'), 'Auxerre'),
+((SELECT id FROM nation WHERE name = 'France'), 'Ajaccio'),
+((SELECT id FROM nation WHERE name = 'France'), 'Angers'),
+((SELECT id FROM nation WHERE name = 'France'), 'Metz');
 
 -- Inserting cities for Germany
-INSERT INTO city (nation_id, name) VALUES
+INSERT OR IGNORE INTO city (nation_id, name) VALUES
 ((SELECT id FROM nation WHERE name = 'Germany'), 'Munich'),
 ((SELECT id FROM nation WHERE name = 'Germany'), 'Dortmund'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Leipzig'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Leverkusen'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Frankfurt'),
 ((SELECT id FROM nation WHERE name = 'Germany'), 'Berlin'),
-((SELECT id FROM nation WHERE name = 'Germany'), 'Hamburg'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Freiburg'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Wolfsburg'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Mönchengladbach'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Bremen'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Sinsheim'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Mainz'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Cologne'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Stuttgart'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Augsburg'),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Bochum'),
 ((SELECT id FROM nation WHERE name = 'Germany'), 'Gelsenkirchen');
 
 -- Inserting cities for England
-INSERT INTO city (nation_id, name) VALUES
-((SELECT id FROM nation WHERE name = 'England'), 'London'),
+INSERT OR IGNORE INTO city (nation_id, name) VALUES
 ((SELECT id FROM nation WHERE name = 'England'), 'Manchester'),
 ((SELECT id FROM nation WHERE name = 'England'), 'Liverpool'),
+((SELECT id FROM nation WHERE name = 'England'), 'London'),
+((SELECT id FROM nation WHERE name = 'England'), 'Newcastle'),
+((SELECT id FROM nation WHERE name = 'England'), 'Leicester'),
 ((SELECT id FROM nation WHERE name = 'England'), 'Birmingham'),
-((SELECT id FROM nation WHERE name = 'England'), 'Newcastle');
+((SELECT id FROM nation WHERE name = 'England'), 'Wolverhampton'),
+((SELECT id FROM nation WHERE name = 'England'), 'Brighton'),
+((SELECT id FROM nation WHERE name = 'England'), 'Leeds'),
+((SELECT id FROM nation WHERE name = 'England'), 'Southampton'),
+((SELECT id FROM nation WHERE name = 'England'), 'Nottingham'),
+((SELECT id FROM nation WHERE name = 'England'), 'Sheffield');
 
 -- Inserting cities for Italy
-INSERT INTO city (nation_id, name) VALUES
-((SELECT id FROM nation WHERE name = 'Italy'), 'Rome'),
-((SELECT id FROM nation WHERE name = 'Italy'), 'Milan'),
+INSERT OR IGNORE INTO city (nation_id, name) VALUES
 ((SELECT id FROM nation WHERE name = 'Italy'), 'Turin'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Milan'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Rome'),
 ((SELECT id FROM nation WHERE name = 'Italy'), 'Naples'),
-((SELECT id FROM nation WHERE name = 'Italy'), 'Florence');
+((SELECT id FROM nation WHERE name = 'Italy'), 'Florence'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Bergamo'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Genoa'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Bologna'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Reggio Emilia'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Udine'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Empoli'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Verona'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Lecce'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Salerno'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Monza'),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Cagliari');
 
 -- Inserting cities for Brazil
-INSERT INTO city (nation_id, name) VALUES
-((SELECT id FROM nation WHERE name = 'Brazil'), 'São Paulo'),
+INSERT OR IGNORE INTO city (nation_id, name) VALUES
 ((SELECT id FROM nation WHERE name = 'Brazil'), 'Rio de Janeiro'),
-((SELECT id FROM nation WHERE name = 'Brazil'), 'Belo Horizonte'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'São Paulo'),
 ((SELECT id FROM nation WHERE name = 'Brazil'), 'Porto Alegre'),
-((SELECT id FROM nation WHERE name = 'Brazil'), 'Salvador');
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Belo Horizonte'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Santos'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Salvador'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Curitiba'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Fortaleza'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Goiânia'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Chapecó'),
+((SELECT id FROM nation WHERE name = 'Brazil'), 'Bragança Paulista');
 
+-- Insertion of National Competitions (Leagues)
 INSERT INTO competition (name, type, reputation, nation_id, confederation_id, has_group_stage, has_knockout_stage, knockout_legs, competition_logo) VALUES
 ('Premier League', 'league', 9000, (SELECT id FROM nation WHERE name = 'England'), NULL, 0, 0, 'single_leg', X''),
 ('La Liga', 'league', 8800, (SELECT id FROM nation WHERE name = 'Spain'), NULL, 0, 0, 'single_leg', X''),
@@ -1117,3 +1189,133 @@ INSERT INTO competition (name, type, reputation, nation_id, confederation_id, ha
 -- Insertion of Continental Competitions
 INSERT INTO competition (name, type, reputation, nation_id, confederation_id, has_group_stage, has_knockout_stage, knockout_legs, competition_logo) VALUES
 ('UEFA Champions League', 'combination', 9500, NULL, (SELECT id FROM confederation WHERE name = 'UEFA'), 1, 1, 'two_legs', X'');
+
+-- Insertion of Stadiums for Portugal
+INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio da Luz', 64642),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio do Dragão', 50033),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio José Alvalade', 50095),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Municipal de Braga', 30286),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio D. Afonso Henriques', 30000),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Municipal 22 de Junho', 5307),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio dos Arcos', 9065),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Cidade de Barcelos', 12000),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Municipal Eng. Manuel Branco Teixeira', 8000),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Municipal de Portimão', 6204),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio de São Miguel', 13277),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio António Coimbra da Mota', 8000),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio do Futebol Clube de Vizela', 6000),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Municipal de Arouca', 5600),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Pina Manique', 5000),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio do Bessa', 28263),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio do Marítimo', 10931),
+((SELECT id FROM nation WHERE name = 'Portugal'), 'Estádio Capital do Móvel', 9077);
+
+-- Insertion of Stadiums for Spain
+INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
+((SELECT id FROM nation WHERE name = 'Spain'), 'Santiago Bernabéu', 81044),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Spotify Camp Nou', 99354),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Cívitas Metropolitano', 68456),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Ramón Sánchez-Pizjuán', 43883),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Benito Villamarín', 60721),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Mestalla', 49430),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Estadio de la Cerámica', 23000),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Reale Arena', 39500),
+((SELECT id FROM nation WHERE name = 'Spain'), 'San Mamés', 53289),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Balaídos', 29000),
+((SELECT id FROM nation WHERE name = 'Spain'), 'RCDE Stadium', 40000),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Coliseum Alfonso Pérez', 17393),
+((SELECT id FROM nation WHERE name = 'Spain'), 'El Sadar', 23576),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Mendizorroza', 19840),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Nuevo Los Cármenes', 19336),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Son Moix', 26500),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Campo de Vallecas', 14700),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Nuevo Mirandilla', 20724),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Martínez Valero', 33732);
+
+-- Insertion of Stadiums for France
+INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
+((SELECT id FROM nation WHERE name = 'France'), 'Parc des Princes', 47929),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Vélodrome', 67394),
+((SELECT id FROM nation WHERE name = 'France'), 'Groupama Stadium', 59186),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Louis II', 18523),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Pierre-Mauroy', 50186),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Bollaert-Delelis', 38052),
+((SELECT id FROM nation WHERE name = 'France'), 'Roazhon Park', 29778),
+((SELECT id FROM nation WHERE name = 'France'), 'Allianz Riviera', 35624),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade de la Beaujoire', 35322),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade de la Meinau', 26109),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade de la Mosson', 32900),
+((SELECT id FROM nation WHERE name = 'France'), 'Stadium de Toulouse', 33150),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Francis-Le Blé', 15097),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Gabriel-Montpied', 11980),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Auguste-Delaune', 21684),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade du Moustoir', 18890),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade de l''Abbé-Deschamps', 18103),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade François Coty', 10446),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Raymond Kopa', 18000),
+((SELECT id FROM nation WHERE name = 'France'), 'Stade Saint-Symphorien', 25636);
+
+-- Insertion of Stadiums for Germany
+INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
+((SELECT id FROM nation WHERE name = 'Germany'), 'Allianz Arena', 75000),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Signal Iduna Park', 81365),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Red Bull Arena', 47069),
+((SELECT id FROM nation WHERE name = 'Germany'), 'BayArena', 30210),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Deutsche Bank Park', 51500),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Stadion An der Alten Försterei', 22012),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Europa-Park Stadion', 34700),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Volkswagen Arena', 30000),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Borussia-Park', 54022),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Weserstadion', 42100),
+((SELECT id FROM nation WHERE name = 'Germany'), 'PreZero Arena', 30150),
+((SELECT id FROM nation WHERE name = 'Germany'), 'MEWA Arena', 33305),
+((SELECT id FROM nation WHERE name = 'Germany'), 'RheinEnergieStadion', 50000),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Mercedes-Benz Arena', 60449),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Olympiastadion', 74475),
+((SELECT id FROM nation WHERE name = 'Germany'), 'WWK Arena', 30660),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Vonovia Ruhrstadion', 26800),
+((SELECT id FROM nation WHERE name = 'Germany'), 'Veltins-Arena', 62271);
+
+-- Insertion of Stadiums for England
+INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
+((SELECT id FROM nation WHERE name = 'England'), 'Etihad Stadium', 53400),
+((SELECT id FROM nation WHERE name = 'England'), 'Old Trafford', 74310),
+((SELECT id FROM nation WHERE name = 'England'), 'Anfield', 53394),
+((SELECT id FROM nation WHERE name = 'England'), 'Stamford Bridge', 40343),
+((SELECT id FROM nation WHERE name = 'England'), 'Emirates Stadium', 60704),
+((SELECT id FROM nation WHERE name = 'England'), 'Tottenham Hotspur Stadium', 62850),
+((SELECT id FROM nation WHERE name = 'England'), 'St. James'' Park', 52305),
+((SELECT id FROM nation WHERE name = 'England'), 'King Power Stadium', 32262),
+((SELECT id FROM nation WHERE name = 'England'), 'Goodison Park', 39414),
+((SELECT id FROM nation WHERE name = 'England'), 'London Stadium', 62500),
+((SELECT id FROM nation WHERE name = 'England'), 'Villa Park', 42785),
+((SELECT id FROM nation WHERE name = 'England'), 'Molineux Stadium', 31750),
+((SELECT id FROM nation WHERE name = 'England'), 'Selhurst Park', 25486),
+((SELECT id FROM nation WHERE name = 'England'), 'Amex Stadium', 31800),
+((SELECT id FROM nation WHERE name = 'England'), 'Gtech Community Stadium', 17250),
+((SELECT id FROM nation WHERE name = 'England'), 'Elland Road', 37794),
+((SELECT id FROM nation WHERE name = 'England'), 'St. Mary''s Stadium', 32384),
+((SELECT id FROM nation WHERE name = 'England'), 'City Ground', 30445),
+((SELECT id FROM nation WHERE name = 'England'), 'Craven Cottage', 22384),
+((SELECT id FROM nation WHERE name = 'England'), 'Bramall Lane', 32702);
+
+-- Insertion of Stadiums for Italy
+INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
+((SELECT id FROM nation WHERE name = 'Italy'), 'Allianz Stadium', 41507),
+((SELECT id FROM nation WHERE name = 'Italy'), 'San Siro', 75923),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Olimpico', 70634),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Diego Armando Maradona', 54726),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Artemio Franchi', 43147),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Gewiss Stadium', 21747),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Olimpico Grande Torino', 28140),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Renato Dall''Ara', 31000),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Luigi Ferraris', 36599),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Mapei Stadium', 21525),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Friuli', 25144),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Carlo Castellani', 16284),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Marcantonio Bentegodi', 39211),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Via del Mare', 33876),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Stadio Arechi', 37180),
+((SELECT id FROM nation WHERE name = 'Italy'), 'U-Power Stadium', 15039),
+((SELECT id FROM nation WHERE name = 'Italy'), 'Unipol Domus', 16416);
