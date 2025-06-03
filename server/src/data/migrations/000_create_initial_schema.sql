@@ -1231,7 +1231,8 @@ INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
 ((SELECT id FROM nation WHERE name = 'Spain'), 'Son Moix', 26500),
 ((SELECT id FROM nation WHERE name = 'Spain'), 'Campo de Vallecas', 14700),
 ((SELECT id FROM nation WHERE name = 'Spain'), 'Nuevo Mirandilla', 20724),
-((SELECT id FROM nation WHERE name = 'Spain'), 'Martínez Valero', 33732);
+((SELECT id FROM nation WHERE name = 'Spain'), 'Martínez Valero', 33732),
+((SELECT id FROM nation WHERE name = 'Spain'), 'Ciutat de València', 26354);
 
 -- Insertion of Stadiums for France
 INSERT OR IGNORE INTO stadium (nation_id, name, capacity) VALUES
