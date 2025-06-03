@@ -72,6 +72,36 @@ class SaveService {
             throw new AppError("Failed to create new save path.", 500);
         }
     }
+
+    public static getSavePath(fileName: string): string {
+        try {
+            const fullPath = path.join(this.getSaveBasePath(), fileName);
+            if (!fs.existsSync(fullPath)) throw new Error(`Save file not found: ${fileName}`);
+
+            return fullPath;
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                fastify.log.error("Failure to get save path:", err.message);
+            } else {
+                fastify.log.error("Unknown error getting save path");
+            }
+            throw new AppError("Failed to get save path.", 500);
+        }
+    }
+
+    public static getSaveDirectory(): string {
+        try {
+            const userDocumentsPath = process.env.DOCUMENTS || path.join(os.homedir(), 'Documents');
+            return path.resolve(userDocumentsPath, "ProPlay Games", "The Manager 2025", "games");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                fastify.log.error("Failure to get save directory:", err.message);
+            } else {
+                fastify.log.error("Unknown error getting save directory path");
+            }
+            throw new AppError("Failed to get save directory path.", 500);
+        }
+    }
 }
 
 export default SaveService;
