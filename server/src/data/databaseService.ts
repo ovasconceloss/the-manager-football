@@ -69,11 +69,11 @@ class DatabaseService {
         }
     }
 
-    public static loadDatabase(fileName: string): Database.Database {
+    public static loadDatabase(filename: string): Database.Database {
         try {
-            if (!fileName) throw new Error("The file name is required to load a save.");
+            if (!filename) throw new Error("The file name is required to load a save.");
 
-            const databasePath = SaveService.getSavePath(fileName);
+            const databasePath = SaveService.getSavePath(filename);
             return new Database(databasePath);
         } catch (err: unknown) {
             if (err instanceof AppError) {
@@ -89,14 +89,14 @@ class DatabaseService {
         }
     }
 
-    public static connectDatabase(action: "load" | "create", fileName?: string): Database.Database {
+    public static connectDatabase(action: "load" | "create", filename?: string): Database.Database {
         try {
             if (action === "create") {
                 const databaseInstance = this.createDatabase();
                 return databaseInstance;
             }
 
-            const databaseInstance = this.loadDatabase(fileName!);
+            const databaseInstance = this.loadDatabase(filename!);
             return databaseInstance;
         } catch (err: unknown) {
             if (err instanceof AppError) {

@@ -56,8 +56,8 @@ class SaveService {
 
     public static createNewSavePath(): string {
         try {
-            const fileName = this.createSaveName();
-            const fullPath = path.join(this.getSaveBasePath(), fileName);
+            const filename = this.createSaveName();
+            const fullPath = path.join(this.getSaveBasePath(), filename);
 
             const directory = path.dirname(fullPath);
             if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
@@ -73,10 +73,10 @@ class SaveService {
         }
     }
 
-    public static getSavePath(fileName: string): string {
+    public static getSavePath(filename: string): string {
         try {
-            const fullPath = path.join(this.getSaveBasePath(), fileName);
-            if (!fs.existsSync(fullPath)) throw new Error(`Save file not found: ${fileName}`);
+            const fullPath = path.join(this.getSaveBasePath(), filename);
+            if (!fs.existsSync(fullPath)) throw new Error(`Save file not found: ${filename}`);
 
             return fullPath;
         } catch (err: unknown) {
