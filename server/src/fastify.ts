@@ -3,6 +3,8 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { AppError } from './errors/errors';
 
+import saveRoutes from './routes/saveRoutes';
+
 const fastify = Fastify({
     logger: {
         level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
@@ -23,6 +25,8 @@ fastify.register(cors, {
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
 });
+
+fastify.register(saveRoutes);
 
 fastify.setErrorHandler((error, request, reply) => {
     if (error instanceof AppError) {
