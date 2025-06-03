@@ -117,21 +117,20 @@ CREATE INDEX competition_season_season_id_idx ON competition_season (season_id);
 
 -- table: competition_stage
 CREATE TABLE competition_stage (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
   competition_id INTEGER NOT NULL,
+  season_id INTEGER NOT NULL,
   name TEXT NOT NULL CHECK(name IN ('group_stage', 'round_of_16', 'quarter_finals', 'semi_finals', 'final')),
   stage_order INTEGER NOT NULL,
   stage_type TEXT NOT NULL CHECK(stage_type IN ('league', 'knockout', 'playoff')),
   number_of_legs TEXT NOT NULL CHECK(number_of_legs IN ('single_leg', 'two_legs')),
   is_current INTEGER NOT NULL DEFAULT 0,
-  competition_season_id INTEGER NOT NULL,
+  PRIMARY KEY (competition_id, season_id),
   FOREIGN KEY (competition_id) REFERENCES competition(id),
-  FOREIGN KEY (competition_season_id) REFERENCES competition_season(competition_id, season_id)
+  FOREIGN KEY (season_id) REFERENCES season(id)
 );
 
--- competition_stage indexes
+-- competition_stage index
 CREATE INDEX competition_stage_competition_id_idx ON competition_stage (competition_id);
-CREATE INDEX competition_stage_competition_season_id_idx ON competition_stage (competition_season_id);
 
 -- table: competition_group
 CREATE TABLE competition_group (
@@ -159,7 +158,8 @@ CREATE INDEX group_club_club_id_idx ON group_club (club_id);
 
 -- table: match
 CREATE TABLE match (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  competition_id INTEGER NOT NULL,
+  season_id INTEGER NOT NULL,
   stage_id INTEGER NOT NULL,
   home_club_id INTEGER NOT NULL,
   away_club_id INTEGER NOT NULL,
@@ -168,18 +168,18 @@ CREATE TABLE match (
   match_date TEXT NOT NULL,
   status TEXT NOT NULL CHECK(status IN ('scheduled', 'played', 'postponed')),
   leg_number INTEGER NOT NULL,
-  competition_season_id INTEGER NOT NULL,
+  PRIMARY KEY (competition_id, season_id),
   FOREIGN KEY (stage_id) REFERENCES competition_stage(id),
   FOREIGN KEY (home_club_id) REFERENCES club(id),
   FOREIGN KEY (away_club_id) REFERENCES club(id),
-  FOREIGN KEY (competition_season_id) REFERENCES competition_season(competition_id, season_id)
+  FOREIGN KEY (competition_id) REFERENCES competition(id),
+  FOREIGN KEY (season_id) REFERENCES season(id)
 );
 
 -- match indexes
 CREATE INDEX match_stage_id_idx ON match (stage_id);
 CREATE INDEX match_home_club_id_idx ON match (home_club_id);
 CREATE INDEX match_away_club_id_idx ON match (away_club_id);
-CREATE INDEX match_competition_season_id_idx ON match (competition_season_id);
 
 -- table: player_position
 CREATE TABLE player_position (
@@ -222,7 +222,7 @@ CREATE TABLE player_contract (
   UNIQUE (player_id, club_id, start_date),
   FOREIGN KEY (player_id) REFERENCES player(id),
   FOREIGN KEY (club_id) REFERENCES club(id)
-)
+);
 
 -- player_contract indexes
 CREATE INDEX player_contract_player_id_index ON player_contract (player_id);
@@ -277,7 +277,6 @@ CREATE TABLE player_attribute (
 -- player_attribute indexes
 CREATE INDEX player_attribute_player_id_index ON player_attribute (player_id);
 CREATE INDEX player_attribute_attribute_type_id_index ON player_attribute (attribute_type_id);
-CREATE INDEX player_attribute_date_recorded_index ON player_attribute (date_recorded);
 
 -- table: match_lineup
 CREATE TABLE match_lineup (
@@ -375,7 +374,7 @@ CREATE TABLE staff_contract (
   UNIQUE (staff_id, club_id, start_date),
   FOREIGN KEY (staff_id) REFERENCES staff(id),
   FOREIGN KEY (club_id) REFERENCES club(id)
-)
+);
 
 -- staff_contract indexes
 CREATE INDEX idx_staff_contract_staff_id ON staff_contract (staff_id);
@@ -453,7 +452,7 @@ CREATE TABLE club_budget (
   transfer_budget_allocated REAL NOT NULL DEFAULT 0.0,
   salary_budget_allocated REAL NOT NULL DEFAULT 0.0,
   initial_cash_balance REAL NOT NULL DEFAULT 0.0,
-  UNIQUE (club_id, season_id)
+  UNIQUE (club_id, season_id),
   FOREIGN KEY (club_id) REFERENCES club(id),
   FOREIGN KEY (season_id) REFERENCES season(id)
 );
@@ -539,7 +538,6 @@ CREATE TABLE staff_attribute (
 -- staff_attribute indexes
 CREATE INDEX idx_staff_attribute_staff_id ON staff_attribute (staff_id);
 CREATE INDEX idx_staff_attribute_type_id ON staff_attribute (staff_attribute_type_id);
-CREATE INDEX idx_staff_attribute_date_recorded ON staff_attribute (date_recorded);
 
 -- table: formation
 CREATE TABLE formation (
@@ -575,8 +573,8 @@ CREATE INDEX idx_formation_position_player_position_id ON formation_position (pl
 
 -- table: league_standing
 CREATE TABLE league_standing (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  competition_season_id INTEGER NOT NULL,
+  competition_id INTEGER NOT NULL,
+  season_id INTEGER NOT NULL,
   club_id INTEGER NOT NULL,
   match_day INTEGER NOT NULL,
   position INTEGER NOT NULL,
@@ -588,13 +586,14 @@ CREATE TABLE league_standing (
   goals_against INTEGER NOT NULL DEFAULT 0,
   goal_difference INTEGER NOT NULL DEFAULT 0,
   points INTEGER NOT NULL DEFAULT 0,
-  UNIQUE (competition_season_id, club_id, match_day),
-  FOREIGN KEY (competition_season_id) REFERENCES competition_season(competition_id, season_id),
-  FOREIGN KEY (club_id) REFERENCES club(id)
+  UNIQUE (competition_id, season_id, club_id, match_day),
+  PRIMARY KEY (competition_id, season_id, club_id, match_day),
+  FOREIGN KEY (club_id) REFERENCES club(id),
+  FOREIGN KEY (competition_id) REFERENCES competition(id),
+  FOREIGN KEY (season_id) REFERENCES season(id)
 );
 
 -- league_standing indexes
-CREATE INDEX idx_league_standing_competition_season_id ON league_standing (competition_season_id);
 CREATE INDEX idx_league_standing_club_id ON league_standing (club_id);
 CREATE INDEX idx_league_standing_match_day ON league_standing (match_day);
 
@@ -710,18 +709,17 @@ CREATE INDEX idx_transfer_window_end_date ON transfer_window (end_date);
 
 -- table: player_season_stats
 CREATE TABLE player_season_stats (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
   player_id INTEGER NOT NULL,
   club_id INTEGER NOT NULL,
   season_id INTEGER NOT NULL,
   competition_id INTEGER NULL,
-  competition_season_id INTEGER NULL,
   matches_played INTEGER NOT NULL DEFAULT 0,
   goals INTEGER NOT NULL DEFAULT 0,
   assists INTEGER NOT NULL DEFAULT 0,
   minutes_played INTEGER NOT NULL DEFAULT 0,
   average_rating REAL NULL,
   UNIQUE (player_id, club_id, season_id, competition_id),
+  PRIMARY KEY (competition_id, season_id),
   FOREIGN KEY (player_id) REFERENCES player(id),
   FOREIGN KEY (club_id) REFERENCES club(id),
   FOREIGN KEY (season_id) REFERENCES season(id),
@@ -865,6 +863,25 @@ CREATE TABLE game_state (
 
 -- game_state index
 CREATE INDEX game_state_season_id_idx ON game_state (season_id);
+
+-- confederation insert
+INSERT INTO confederation (name, continent, foundation_year, confederation_image) VALUES
+('UEFA', 'europe', 1954, X''),
+('CONMEBOL', 'south_america', 1916, X''),
+('CAF', 'africa', 1957, X''),
+('AFC', 'asia', 1954, X''),
+('CONCACAF', 'north_america', 1961, X''),
+('OFC', 'oceania', 1966, X'');
+
+-- nation insert
+INSERT INTO nation (name, reputation, flag_image, federation_name, federation_image, confederation_id) VALUES
+('Portugal', 7800, X'', 'Federação Portuguesa de Futebol', X'', (SELECT id FROM confederation WHERE name = 'UEFA')),
+('Spain', 8800, X'', 'Real Federación Española de Fútbol', X'', (SELECT id FROM confederation WHERE name = 'UEFA')),
+('France', 8200, X'', 'Fédération Française de Football', X'', (SELECT id FROM confederation WHERE name = 'UEFA')),
+('Germany', 8500, X'', 'Deutscher Fußball-Bund', X'', (SELECT id FROM confederation WHERE name = 'UEFA')),
+('England', 9000, X'', 'The Football Association', X'', (SELECT id FROM confederation WHERE name = 'UEFA')),
+('Italy', 8600, X'', 'Federazione Italiana Giuoco Calcio', X'', (SELECT id FROM confederation WHERE name = 'UEFA')),
+('Brazil', 9000, X'', 'Confederação Brasileira de Futebol', X'', (SELECT id FROM confederation WHERE name = 'CONMEBOL'));
 
 -- suspension_reason_type insert
 INSERT INTO suspension_reason_type (name) VALUES
@@ -1011,8 +1028,8 @@ INSERT INTO attribute_type (name, category) VALUES
 ('Dribbling', 'technical'),           -- Ability to dribble and control the ball
 ('Heading', 'technical'),         -- Skilled in aerial disputes and head shots
 
-('Tackling', 'defensive'),          -- Ability to steal the ball and disarm opponents
-('Marking', 'defensive'),         -- Ability to follow and nullify opponents
+('Tackling', 'technical'),          -- Ability to steal the ball and disarm opponents
+('Marking', 'technical'),         -- Ability to follow and nullify opponents
 
 ('Pace', 'physical'),        -- Speed and acceleration
 ('Strength', 'physical'),             -- Ability to win physical duels
@@ -1086,7 +1103,7 @@ INSERT INTO competition (name, type, reputation, nation_id, confederation_id, ha
 ('Ligue 1', 'league', 8200, (SELECT id FROM nation WHERE name = 'France'), NULL, 0, 0, 'single_leg', X''),
 ('Bundesliga', 'league', 8500, (SELECT id FROM nation WHERE name = 'Germany'), NULL, 0, 0, 'single_leg', X''),
 ('Serie A', 'league', 8600, (SELECT id FROM nation WHERE name = 'Italy'), NULL, 0, 0, 'single_leg', X''),
-('Primeira Liga', 'league', 7800, (SELECT id FROM nation WHERE name = 'Portugal'), NULL, 0, 0, 'single_leg', X''),
+('Primeira Liga', 'league', 7800, (SELECT id FROM nation WHERE name = 'Portugal'), NULL, 0, 0, 'single_leg', X'');
 
 -- Insertion of National Competitions (Cups)
 INSERT INTO competition (name, type, reputation, nation_id, confederation_id, has_group_stage, has_knockout_stage, knockout_legs, competition_logo) VALUES
@@ -1095,8 +1112,8 @@ INSERT INTO competition (name, type, reputation, nation_id, confederation_id, ha
 ('Coupe de France', 'cup', 6500, (SELECT id FROM nation WHERE name = 'France'), NULL, 0, 1, 'single_leg', X''),
 ('DFB-Pokal', 'cup', 6700, (SELECT id FROM nation WHERE name = 'Germany'), NULL, 0, 1, 'single_leg', X''),
 ('Coppa Italia', 'cup', 6600, (SELECT id FROM nation WHERE name = 'Italy'), NULL, 0, 1, 'single_leg', X''),
-('Taça de Portugal', 'cup', 6200, (SELECT id FROM nation WHERE name = 'Portugal'), NULL, 0, 1, 'single_leg', X''),
+('Taça de Portugal', 'cup', 6200, (SELECT id FROM nation WHERE name = 'Portugal'), NULL, 0, 1, 'single_leg', X'');
 
 -- Insertion of Continental Competitions
 INSERT INTO competition (name, type, reputation, nation_id, confederation_id, has_group_stage, has_knockout_stage, knockout_legs, competition_logo) VALUES
-('UEFA Champions League', 'combination', 9500, NULL, (SELECT id FROM confederation WHERE name = 'UEFA'), 1, 1, 'two_legs', X''),
+('UEFA Champions League', 'combination', 9500, NULL, (SELECT id FROM confederation WHERE name = 'UEFA'), 1, 1, 'two_legs', X'');
