@@ -53,6 +53,25 @@ class SaveService {
             throw new AppError("Failed to create save name.", 500);
         }
     }
+
+    public static createNewSavePath(): string {
+        try {
+            const fileName = this.createSaveName();
+            const fullPath = path.join(this.getSaveBasePath(), fileName);
+
+            const directory = path.dirname(fullPath);
+            if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
+
+            return fullPath;
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                fastify.log.error("Failure to create new save path:", err.message);
+            } else {
+                fastify.log.error("Unknown error creating new save path");
+            }
+            throw new AppError("Failed to create new save path.", 500);
+        }
+    }
 }
 
 export default SaveService;
