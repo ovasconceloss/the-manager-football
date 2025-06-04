@@ -7,6 +7,7 @@ import { ClubDatabaseInfo } from "../interfaces/club";
 import { NationDatabaseInfo } from "../interfaces/nation";
 import { CompetitionDatabaseInfo } from "../interfaces/competition";
 import { ConfederationDatabaseInfo } from "../interfaces/confederation";
+import SeedService from "../data/seedService";
 
 const databasePath = path.join(__dirname, '..', 'data', 'default', 'default.tm');
 const databaseInstance = new Database(databasePath);
@@ -59,6 +60,7 @@ databaseInstance.transaction(() => {
     }
 
     const continentalCompetitionsFromDatabase = getContinentalCompetitionsStatement.all() as CompetitionDatabaseInfo[];
+
     for (const competition of continentalCompetitionsFromDatabase) {
         const logoFilename = `${sanitizeFileName(competition.name)}.png`;
         let logoBuffer: Buffer | null = null;
@@ -72,12 +74,12 @@ databaseInstance.transaction(() => {
         competitionUpdateLogoStatement.run(logoBuffer || Buffer.from(''), competition.id);
     }
 
-
     for (const nation of nationsFromDatabase) {
         const nationFilename = `${sanitizeFileName(nation.name)}.png`;
 
         let flagBuffer: Buffer | null = null;
         const flagPath = path.join(nationsFlagsDir, nationFilename);
+
         if (fs.existsSync(flagPath)) {
             flagBuffer = fs.readFileSync(flagPath);
         } else {
@@ -86,15 +88,16 @@ databaseInstance.transaction(() => {
 
         let federationLogoBuffer: Buffer | null = null;
         const federationLogoPath = path.join(nationsFederationsDir, nationFilename);
+
         if (fs.existsSync(federationLogoPath)) {
             federationLogoBuffer = fs.readFileSync(federationLogoPath);
         } else {
             fastify.log.warn(`Warning: Federation logo not found for nation ${nation.name} at ${federationLogoPath}. Using empty BLOB.`);
         }
-        nationUpdateBlobsStatement.run(flagBuffer || Buffer.from(''), federationLogoBuffer || Buffer.from(''), nation.id);
 
+        nationUpdateBlobsStatement.run(flagBuffer || Buffer.from(''), federationLogoBuffer || Buffer.from(''), nation.id);
         const nationalCompetitionsFromDatabase = getNationalCompetitionsStatement.all(nation.id) as CompetitionDatabaseInfo[];
-        const competitionNationDir = path.join(nationalCompetitionsDir, sanitizeFileName(nation.name)); // Caminho para nacionais
+        const competitionNationDir = path.join(nationalCompetitionsDir, sanitizeFileName(nation.name)); 
 
         for (const competition of nationalCompetitionsFromDatabase) {
             let logoBuffer: Buffer | null = null;
@@ -109,6 +112,7 @@ databaseInstance.transaction(() => {
             competitionUpdateLogoStatement.run(logoBuffer || Buffer.from(''), competition.id);
         }
 
+        const currentSeasonStartDate = "2025-07-01";
         const clubsFromDatabase = getClubsByNationStatement.all(nation.id) as ClubDatabaseInfo[];
         const nationLogoDir = path.join(graphicsBaseDir, sanitizeFileName(nation.name));
 
@@ -122,7 +126,10 @@ databaseInstance.transaction(() => {
             } else {
                 fastify.log.warn(`Warning: Club logo not found for ${club.name} at ${logoPath}. Using empty BLOB.`);
             }
+
             clubUpdateLogoStatement.run(logoBuffer || Buffer.from(''), club.id);
+
+            SeedService.seedPlayers(databaseInstance, club.id, nation.id, club.reputation, currentSeasonStartDate);
         }
     }
 })();
