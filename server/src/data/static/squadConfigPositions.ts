@@ -1,0 +1,17 @@
+export const squadPositionsConfig: { abbreviation: string, count: number }[] = [
+    { abbreviation: "GK", count: 3 },
+    { abbreviation: "CB", count: 6 },
+    { abbreviation: "LB", count: 2 },
+    { abbreviation: "RB", count: 2 },
+    { abbreviation: "LWB", count: 1 },
+    { abbreviation: "RWB", count: 1 },
+    { abbreviation: "CDM", count: 4 },
+    { abbreviation: "CM", count: 4 },
+    { abbreviation: "CAM", count: 2 },
+    { abbreviation: "LM", count: 1 },
+    { abbreviation: "RM", count: 1 },
+    { abbreviation: "LW", count: 2 },
+    { abbreviation: "RW", count: 2 },
+    { abbreviation: "ST", count: 3 },
+    { abbreviation: "CF", count: 1 },
+];
