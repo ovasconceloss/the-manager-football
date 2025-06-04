@@ -129,6 +129,7 @@ databaseInstance.transaction(() => {
 
             clubUpdateLogoStatement.run(logoBuffer || Buffer.from(''), club.id);
 
+            SeedService.seedStaff(databaseInstance, club.id, nation.id, club.reputation, currentSeasonStartDate);
             SeedService.seedPlayers(databaseInstance, club.id, nation.id, club.reputation, currentSeasonStartDate);
         }
     }

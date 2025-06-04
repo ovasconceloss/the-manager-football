@@ -150,3 +150,69 @@ export const ATTRIBUTE_WEIGHTS_BY_POSITION: Record<string, { attrName: string, w
         { attrName: 'Stamina', weight: 0.05 },
     ]
 };
+
+export const STAFF_ATTRIBUTE_WEIGHTS_BY_ROLE: Record<string, { attrName: string, weight: number }[]> = {
+    'Manager': [
+        { attrName: 'Negotiation', weight: 0.20 },
+        { attrName: 'Man Management', weight: 0.20 },
+        { attrName: 'Discipline', weight: 0.15 },
+        { attrName: 'Coaching - Tactical', weight: 0.15 },
+        { attrName: 'Coaching - Attacking', weight: 0.10 },
+        { attrName: 'Coaching - Defending', weight: 0.10 },
+        { attrName: 'Coaching - Fitness', weight: 0.05 },
+        { attrName: 'Coaching - Goalkeeping', weight: 0.05 },
+    ],
+    'Assistant Manager': [
+        { attrName: 'Man Management', weight: 0.20 },
+        { attrName: 'Coaching - Tactical', weight: 0.20 },
+        { attrName: 'Coaching - Attacking', weight: 0.15 },
+        { attrName: 'Coaching - Defending', weight: 0.15 },
+        { attrName: 'Negotiation', weight: 0.10 },
+        { attrName: 'Discipline', weight: 0.10 },
+        { attrName: 'Coaching - Fitness', weight: 0.05 },
+        { attrName: 'Coaching - Goalkeeping', weight: 0.05 },
+    ],
+    'Head Coach': [
+        { attrName: 'Coaching - Attacking', weight: 0.20 },
+        { attrName: 'Coaching - Defending', weight: 0.20 },
+        { attrName: 'Coaching - Tactical', weight: 0.20 },
+        { attrName: 'Coaching - Fitness', weight: 0.20 },
+        { attrName: 'Discipline', weight: 0.10 },
+        { attrName: 'Man Management', weight: 0.10 },
+    ],
+    'Goalkeeping Coach': [
+        { attrName: 'Coaching - Goalkeeping', weight: 0.90 },
+        { attrName: 'Man Management', weight: 0.10 },
+    ],
+    'Fitness Coach': [
+        { attrName: 'Coaching - Fitness', weight: 0.90 },
+        { attrName: 'Discipline', weight: 0.10 },
+    ],
+    'Scout': [
+        { attrName: 'Scouting - Judging Ability', weight: 0.45 },
+        { attrName: 'Scouting - Judging Potential', weight: 0.45 },
+        { attrName: 'Negotiation', weight: 0.10 },
+    ],
+    'Physio': [
+        { attrName: 'Medical - Injury Prevention', weight: 0.50 },
+        { attrName: 'Medical - Treatment', weight: 0.50 },
+    ],
+    'Doctor': [
+        { attrName: 'Medical - Injury Prevention', weight: 0.60 },
+        { attrName: 'Medical - Treatment', weight: 0.40 },
+    ],
+    'Analyst': [
+        { attrName: 'Vision', weight: 0.40 },
+        { attrName: 'Coaching - Tactical', weight: 0.30 },
+        { attrName: 'Composure', weight: 0.20 },
+        { attrName: 'Discipline', weight: 0.10 },
+    ],
+    'Youth Coach': [
+        { attrName: 'Coaching - Attacking', weight: 0.20 },
+        { attrName: 'Coaching - Defending', weight: 0.20 },
+        { attrName: 'Coaching - Tactical', weight: 0.15 },
+        { attrName: 'Coaching - Fitness', weight: 0.15 },
+        { attrName: 'Man Management', weight: 0.20 },
+        { attrName: 'Discipline', weight: 0.10 },
+    ],
+};

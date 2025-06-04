@@ -1,4 +1,4 @@
-export const squadPositionsConfig: { abbreviation: string, count: number }[] = [
+export const SQUAD_POSITION_CONFIG: { abbreviation: string, count: number }[] = [
     { abbreviation: "GK", count: 3 },
     { abbreviation: "CB", count: 6 },
     { abbreviation: "LB", count: 2 },
@@ -14,4 +14,17 @@ export const squadPositionsConfig: { abbreviation: string, count: number }[] = [
     { abbreviation: "RW", count: 2 },
     { abbreviation: "ST", count: 3 },
     { abbreviation: "CF", count: 1 },
+];
+
+export const SQUAD_STAFF_CONFIG: { role: string, count: number, minAge: number, maxAge: number }[] = [
+    { role: 'Manager', count: 1, minAge: 35, maxAge: 65 },
+    { role: 'Assistant Manager', count: 1, minAge: 30, maxAge: 60 },
+    { role: 'Head Coach', count: 3, minAge: 28, maxAge: 55 },
+    { role: 'Goalkeeping Coach', count: 1, minAge: 30, maxAge: 55 },
+    { role: 'Fitness Coach', count: 2, minAge: 25, maxAge: 50 },
+    { role: 'Scout', count: 3, minAge: 28, maxAge: 60 },
+    { role: 'Physio', count: 2, minAge: 25, maxAge: 50 },
+    { role: 'Doctor', count: 1, minAge: 30, maxAge: 60 },
+    { role: 'Analyst', count: 1, minAge: 25, maxAge: 45 },
+    { role: 'Youth Coach', count: 2, minAge: 28, maxAge: 50 },
 ];
