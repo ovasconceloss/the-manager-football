@@ -30,6 +30,8 @@ fastify.register(cors, {
 fastify.register(saveRoutes);
 fastify.register(seasonRoutes);
 
+fastify.server.setTimeout(600000);
+
 fastify.setErrorHandler((error, request, reply) => {
     if (error instanceof AppError) {
         reply.status(error.statusCode).send({ error: error.message });
