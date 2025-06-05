@@ -32,4 +32,10 @@ export interface PlayerMatchStatsInput {
     passes: number;
     interceptions: number;
     is_motm: number; // 0 or 1
+    shots?: number;
+    shots_on_target?: number;
+    tackles_won?: number;
+    fouls_committed?: number;
+    yellow_cards?: number;
+    red_cards?: number;
 }
