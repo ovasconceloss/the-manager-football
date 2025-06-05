@@ -7,7 +7,7 @@ import { AppError } from "../errors/errors";
 class SaveService {
     private static getDefaultDatabasePath = (): string => {
         try {
-            return path.resolve(__dirname, "./default/defaultDatabase.tm");
+            return path.resolve(__dirname, "./default/default.tm");
         } catch (err: unknown) {
             if (err instanceof Error) {
                 fastify.log.error("Failure to resolve the path of default database:", err.message);
@@ -61,6 +61,8 @@ class SaveService {
 
             const directory = path.dirname(fullPath);
             if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
+
+            //fs.copyFileSync(this.getDefaultDatabasePath(), fullPath);
 
             return fullPath;
         } catch (err: unknown) {
