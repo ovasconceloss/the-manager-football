@@ -19,7 +19,7 @@ class LoopService {
         fastify.log.info(`Current game date: ${today}, Season ID: ${seasonId}`);
 
         const scheduledMatches = database.prepare(`
-            SELECT id FROM match WHERE date = ? AND status = 'scheduled' AND season_id = ?
+            SELECT id FROM match WHERE match_date = ? AND status = 'scheduled' AND season_id = ?
         `).all(today, seasonId) as Array<{ id: number }>;
 
         fastify.log.info(`Found ${scheduledMatches.length} scheduled matches for today.`);
@@ -29,6 +29,7 @@ class LoopService {
                 MatchEngineService.simulateMatch(database, match.id);
                 fastify.log.info(`Successfully simulated match ID: ${match.id}`);
             } catch (error: any) {
+                fastify.log.info(error);
                 fastify.log.error(`Error simulating match ID ${match.id}: ${error.message}`);
             }
         }
