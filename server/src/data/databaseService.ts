@@ -52,7 +52,7 @@ class DatabaseService {
             const databasePath = SaveService.createNewSavePath();
             const database = new Database(databasePath);
 
-            this.executeMigrations(database);
+            //this.executeMigrations(database);
 
             return database;
         } catch (err: unknown) {

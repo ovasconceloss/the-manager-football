@@ -62,7 +62,7 @@ class SaveService {
             const directory = path.dirname(fullPath);
             if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
 
-            //fs.copyFileSync(this.getDefaultDatabasePath(), fullPath);
+            fs.copyFileSync(this.getDefaultDatabasePath(), fullPath);
 
             return fullPath;
         } catch (err: unknown) {
