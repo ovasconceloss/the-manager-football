@@ -4,6 +4,7 @@ import cors from "@fastify/cors";
 import { AppError } from './errors/errors';
 
 import saveRoutes from './routes/saveRoutes';
+import seasonRoutes from './routes/seasonRoutes';
 
 const fastify = Fastify({
     logger: {
@@ -27,6 +28,7 @@ fastify.register(cors, {
 });
 
 fastify.register(saveRoutes);
+fastify.register(seasonRoutes);
 
 fastify.setErrorHandler((error, request, reply) => {
     if (error instanceof AppError) {
