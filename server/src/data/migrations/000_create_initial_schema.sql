@@ -117,6 +117,7 @@ CREATE INDEX competition_season_season_id_idx ON competition_season (season_id);
 
 -- table: competition_stage
 CREATE TABLE competition_stage (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   competition_id INTEGER NOT NULL,
   season_id INTEGER NOT NULL,
   name TEXT NOT NULL CHECK(name IN ('group_stage', 'round_of_16', 'quarter_finals', 'semi_finals', 'final')),
@@ -124,7 +125,7 @@ CREATE TABLE competition_stage (
   stage_type TEXT NOT NULL CHECK(stage_type IN ('league', 'knockout', 'playoff')),
   number_of_legs TEXT NOT NULL CHECK(number_of_legs IN ('single_leg', 'two_legs')),
   is_current INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (competition_id, season_id),
+  UNIQUE (competition_id, season_id, name)
   FOREIGN KEY (competition_id) REFERENCES competition(id),
   FOREIGN KEY (season_id) REFERENCES season(id)
 );
@@ -158,6 +159,7 @@ CREATE INDEX group_club_club_id_idx ON group_club (club_id);
 
 -- table: match
 CREATE TABLE match (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   competition_id INTEGER NOT NULL,
   season_id INTEGER NOT NULL,
   stage_id INTEGER NOT NULL,
@@ -168,7 +170,6 @@ CREATE TABLE match (
   match_date TEXT NOT NULL,
   status TEXT NOT NULL CHECK(status IN ('scheduled', 'played', 'postponed')),
   leg_number INTEGER NOT NULL,
-  PRIMARY KEY (competition_id, season_id),
   FOREIGN KEY (stage_id) REFERENCES competition_stage(id),
   FOREIGN KEY (home_club_id) REFERENCES club(id),
   FOREIGN KEY (away_club_id) REFERENCES club(id),
@@ -180,6 +181,7 @@ CREATE TABLE match (
 CREATE INDEX match_stage_id_idx ON match (stage_id);
 CREATE INDEX match_home_club_id_idx ON match (home_club_id);
 CREATE INDEX match_away_club_id_idx ON match (away_club_id);
+CREATE INDEX idx_match_unique ON match (competition_id, season_id, match_date, home_club_id, away_club_id);
 
 -- table: player_position
 CREATE TABLE player_position (
@@ -573,7 +575,8 @@ CREATE INDEX idx_formation_position_player_position_id ON formation_position (pl
 
 -- table: league_standing
 CREATE TABLE league_standing (
-  competition_id INTEGER NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  competition_id INTEGER NOT NULL, 
   season_id INTEGER NOT NULL,
   club_id INTEGER NOT NULL,
   match_day INTEGER NOT NULL,
@@ -587,10 +590,8 @@ CREATE TABLE league_standing (
   goal_difference INTEGER NOT NULL DEFAULT 0,
   points INTEGER NOT NULL DEFAULT 0,
   UNIQUE (competition_id, season_id, club_id, match_day),
-  PRIMARY KEY (competition_id, season_id, club_id, match_day),
-  FOREIGN KEY (club_id) REFERENCES club(id),
-  FOREIGN KEY (competition_id) REFERENCES competition(id),
-  FOREIGN KEY (season_id) REFERENCES season(id)
+  FOREIGN KEY (competition_id, season_id) REFERENCES competition_season(competition_id, season_id),
+  FOREIGN KEY (club_id) REFERENCES club(id)
 );
 
 -- league_standing indexes
