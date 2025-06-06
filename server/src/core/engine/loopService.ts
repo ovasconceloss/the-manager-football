@@ -1,9 +1,10 @@
+import path from 'path';
 import fastify from "../../fastify";
 import Database from "better-sqlite3";
-import MatchEngineService from "./matchEngineService";
+import { Worker } from 'worker_threads';
 
 class LoopService {
-    public static advanceGameDay(database: Database.Database) {
+    public static async advanceGameDay(database: Database.Database) {
         const state = database.prepare("SELECT * FROM game_state LIMIT 1").get() as {
             id: number, current_date: string; season_id: number
         };
@@ -24,15 +25,46 @@ class LoopService {
 
         fastify.log.info(`Found ${scheduledMatches.length} scheduled matches for today.`);
 
+        const databasePath = database.name;
+        const simulationPromises: Promise<any>[] = [];
+
         for (const match of scheduledMatches) {
-            try {
-                MatchEngineService.simulateMatch(database, match.id);
-                fastify.log.info(`Successfully simulated match ID: ${match.id}`);
-            } catch (error: any) {
-                fastify.log.info(error);
-                fastify.log.error(`Error simulating match ID ${match.id}: ${error.message}`);
-            }
+            const simulationPromise = new Promise((resolve, reject) => {
+                const worker = new Worker(
+                    path.resolve(__dirname, '../../workers/matchSimulationWorker.ts'),
+                    { execArgv: ['-r', 'ts-node/register'] }
+                )
+
+                worker.on('message', (message) => {
+                    if (message.success) {
+                        fastify.log.info(`Successfully simulated match ID: ${message.matchId}`);
+                        resolve(message.result);
+                    } else {
+                        console.log(message)
+                        fastify.log.error(`Error simulating match ID ${message.matchId}: ${message.error}`);
+                        reject(new Error(message.error));
+                    }
+                });
+
+                worker.on('error', (err) => {
+                    fastify.log.error(`Worker error for match ID ${match.id}:`, err);
+                    reject(err);
+                    worker.terminate();
+                });
+
+                worker.on('exit', (code) => {
+                    if (code !== 0) {
+                        fastify.log.error(`Worker stopped with exit code ${code} for match ID ${match.id}`);
+                        reject(new Error(`Worker stopped with exit code ${code}`));
+                    }
+                });
+
+                worker.postMessage({ databasePath: databasePath, matchId: match.id });
+            });
+            simulationPromises.push(simulationPromise);
         }
+
+        await Promise.allSettled(simulationPromises);
 
         const nextDate = new Date(today);
         nextDate.setDate(nextDate.getDate() + 1);
@@ -43,8 +75,8 @@ class LoopService {
         fastify.log.info(`Game date advanced to: ${nextDateFormatted}.`);
 
         return {
-            played: scheduledMatches.length,
-            newDate: nextDateFormatted
+            playedMatches: scheduledMatches.length,
+            nextDate: nextDateFormatted
         };
     }
 }
