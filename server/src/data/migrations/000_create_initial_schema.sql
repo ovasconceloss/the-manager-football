@@ -854,6 +854,13 @@ CREATE TABLE player_suspension (
   FOREIGN KEY (match_id_origin) REFERENCES match(id)
 );
 
+CREATE TABLE match_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id INTEGER NOT NULL,
+  log_text TEXT NOT NULL,
+  FOREIGN KEY (match_id) REFERENCES match(id)
+);
+
 -- player_suspension indexes
 CREATE INDEX idx_player_suspension_player_id ON player_suspension (player_id);
 CREATE INDEX idx_player_suspension_reason_type_id ON player_suspension (suspension_reason_type_id);
