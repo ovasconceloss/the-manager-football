@@ -81,7 +81,7 @@ export interface PlayerMatchStatsInput {
     rating: number;
     goals: number;
     assists: number;
-    // defenses: number;
+    defenses: number;
     // passes: number;
     // interceptions: number;
     is_motm: number; // 0 ou 1
