@@ -1,11 +1,14 @@
-import fastify from "../../fastify";
 import Database from "better-sqlite3";
-import { MatchDbInfo } from "../../interfaces/match";
-import { LeagueStandingData } from "../../interfaces/league";
-import { PlayerLineupInfo, PlayerMatchStatsInput } from "../../interfaces/player";
+import fastify from "../../../../fastify";
+import { randomValues } from "../../../../utils/utils";
+import { MatchDbInfo } from "../../../../interfaces/match";
+import { LeagueStandingData } from "../../../../interfaces/league";
+import { PlayerLineupInfo, PlayerMatchStatsInput } from "../../../../interfaces/player";
 
-class MatchEngineService {
-    private static readonly HOME_ADVANTAGE_FACTOR = 3;
+class MatchServiceUtils {
+    private static readonly RED_CARD_BASE_PROB = 0.002;
+    private static readonly YELLOW_CARD_BASE_PROB = 0.02
+
     private static readonly POSITION_CATEGORIES: Record<string, 'attack' | 'midfield' | 'defense' | 'goalkeeper'> = {
         'ST': 'attack', 'CF': 'attack', 'LW': 'attack', 'RW': 'attack', 'CAM': 'attack',
         'LM': 'midfield', 'RM': 'midfield', 'CM': 'midfield', 'CDM': 'midfield',
@@ -23,22 +26,14 @@ class MatchEngineService {
         LM: 0.12, RM: 0.12, LB: 0.05, RB: 0.05, LWB: 0.08, RWB: 0.08, CB: 0.01, GK: 0.0
     };
 
-    private static readonly YELLOW_CARD_BASE_PROB = 0.02;
-    private static readonly RED_CARD_BASE_PROB = 0.002;
-    private static readonly INJURY_BASE_PROB = 0.01;
-
-    private static randomValues(min: number, max: number): number {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    private static lineupExists(databaseInstance: Database.Database, matchId: number, clubId: number): boolean {
+    public static lineupExists(databaseInstance: Database.Database, matchId: number, clubId: number): boolean {
         const result = databaseInstance.prepare(
             `SELECT COUNT(*) as count FROM match_lineup WHERE match_id = ? AND club_id = ? AND is_starter = 1`
         ).get(matchId, clubId) as { count: number };
         return result.count >= 11;
     }
 
-    private static generateAIAutoLineup(databaseInstance: Database.Database, matchId: number, clubId: number): void {
+    public static generateAIAutoLineup(databaseInstance: Database.Database, matchId: number, clubId: number): void {
         const players = databaseInstance.prepare(`
             SELECT
                 p.id,
@@ -74,21 +69,21 @@ class MatchEngineService {
         })();
     }
 
-    private static getStartingPlayers(databaseInstance: Database.Database, matchId: number, clubId: number): PlayerLineupInfo[] {
+    public static getStartingPlayers(databaseInstance: Database.Database, matchId: number, clubId: number): PlayerLineupInfo[] {
         const playersRaw = databaseInstance.prepare(`
-            SELECT
-                p.id,
-                p.overall,
-                pp.name as position_name,
-                pat.name as attribute_name,
-                pa.value as attribute_value
-            FROM player p
-            JOIN match_lineup ml ON ml.player_id = p.id
-            JOIN player_position pp ON pp.id = ml.position_played_id
-            LEFT JOIN player_attribute pa ON pa.player_id = p.id
-            LEFT JOIN attribute_type pat ON pat.id = pa.attribute_type_id
-            WHERE ml.match_id = ? AND ml.club_id = ? AND ml.is_starter = 1
-        `).all(matchId, clubId) as { id: number, overall: number, position_name: string, attribute_name: string, attribute_value: number }[];
+                SELECT
+                    p.id,
+                    p.overall,
+                    pp.name as position_name,
+                    pat.name as attribute_name,
+                    pa.value as attribute_value
+                FROM player p
+                JOIN match_lineup ml ON ml.player_id = p.id
+                JOIN player_position pp ON pp.id = ml.position_played_id
+                LEFT JOIN player_attribute pa ON pa.player_id = p.id
+                LEFT JOIN attribute_type pat ON pat.id = pa.attribute_type_id
+                WHERE ml.match_id = ? AND ml.club_id = ? AND ml.is_starter = 1
+            `).all(matchId, clubId) as { id: number, overall: number, position_name: string, attribute_name: string, attribute_value: number }[];
 
         const playersMap = new Map<number, PlayerLineupInfo>();
 
@@ -108,14 +103,14 @@ class MatchEngineService {
         return Array.from(playersMap.values());
     }
 
-    private static getTeamAttackDefense(players: PlayerLineupInfo[]): { attack: number, defense: number } {
+    public static getTeamAttackDefense(players: PlayerLineupInfo[]): { attack: number, defense: number } {
         let totalAttackRating = 0;
         let totalDefenseRating = 0;
         let attackPlayersCount = 0;
         let defensePlayersCount = 0;
 
         for (const p of players) {
-            const positionCategory = MatchEngineService.POSITION_CATEGORIES[p.position_name];
+            const positionCategory = MatchServiceUtils.POSITION_CATEGORIES[p.position_name];
 
             const finishing = p.attributes.get('Finishing') || 0;
             const dribbling = p.attributes.get('Dribbling') || 0;
@@ -155,7 +150,7 @@ class MatchEngineService {
         };
     }
 
-    private static simulateScore(
+    public static simulateScore(
         teamAttack: number,
         opponentDefense: number,
         homeAdvantage: number = 0
@@ -179,7 +174,7 @@ class MatchEngineService {
         return k - 1;
     }
 
-    private static generatePlayerStats(
+    public static generatePlayerStats(
         players: PlayerLineupInfo[],
         matchId: number,
         clubId: number,
@@ -206,7 +201,7 @@ class MatchEngineService {
 
         for (let i = 0; i < teamGoals; i++) {
             const weights = players.map(p => {
-                const goalProb = MatchEngineService.GOAL_PROB_BY_POSITION[p.position_name] || 0.001;
+                const goalProb = MatchServiceUtils.GOAL_PROB_BY_POSITION[p.position_name] || 0.001;
                 const finishing = p.attributes.get('Finishing') || 1;
                 return goalProb * (finishing / 20) * (p.overall / 100);
             });
@@ -231,7 +226,7 @@ class MatchEngineService {
                 if (possibleAssisters.length === 0) continue;
 
                 const weights = possibleAssisters.map(p => {
-                    const assistProb = MatchEngineService.ASSIST_PROB_BY_POSITION[p.position_name] || 0.001;
+                    const assistProb = MatchServiceUtils.ASSIST_PROB_BY_POSITION[p.position_name] || 0.001;
                     const passing = p.attributes.get('Passing') || 1;
                     const vision = p.attributes.get('Vision') || 1;
                     return assistProb * ((passing + vision) / 40) * (p.overall / 100);
@@ -252,36 +247,36 @@ class MatchEngineService {
 
         for (const s of stats) {
             const playerInfo = players.find(p => p.id === s.player_id)!;
-            const positionCategory = MatchEngineService.POSITION_CATEGORIES[playerInfo.position_name];
+            const positionCategory = MatchServiceUtils.POSITION_CATEGORIES[playerInfo.position_name];
 
             const finishingAttr = playerInfo.attributes.get('Finishing') || 1;
             const visionAttr = playerInfo.attributes.get('Vision') || 1;
-            s.shots = Math.round((finishingAttr + visionAttr) / 2 * this.randomValues(0.1, 1.5));
-            if (positionCategory === 'attack') s.shots += this.randomValues(0, 3);
-            if (positionCategory === 'midfield') s.shots += this.randomValues(0, 1);
-            s.shots_on_target = Math.round(s.shots * this.randomValues(0.3, 0.7));
+            s.shots = Math.round((finishingAttr + visionAttr) / 2 * randomValues(0.1, 1.5));
+            if (positionCategory === 'attack') s.shots += randomValues(0, 3);
+            if (positionCategory === 'midfield') s.shots += randomValues(0, 1);
+            s.shots_on_target = Math.round(s.shots * randomValues(0.3, 0.7));
 
             const passingAttr = playerInfo.attributes.get('Passing') || 1;
-            s.passes = Math.round(passingAttr * this.randomValues(1, 4) + (positionCategory === 'midfield' || positionCategory === 'defense' ? 10 : 0));
+            s.passes = Math.round(passingAttr * randomValues(1, 4) + (positionCategory === 'midfield' || positionCategory === 'defense' ? 10 : 0));
 
             if (positionCategory === 'defense' || playerInfo.position_name === 'CDM') {
                 const tacklingAttr = playerInfo.attributes.get('Tackling') || 1;
                 const markingAttr = playerInfo.attributes.get('Marking') || 1;
-                s.tackles_won = Math.round((tacklingAttr + markingAttr) / 2 * this.randomValues(0.5, 2));
+                s.tackles_won = Math.round((tacklingAttr + markingAttr) / 2 * randomValues(0.5, 2));
                 s.defenses = s.tackles_won;
-                s.interceptions = Math.round((playerInfo.attributes.get('Vision') || 1) * this.randomValues(0.2, 1.5));
+                s.interceptions = Math.round((playerInfo.attributes.get('Vision') || 1) * randomValues(0.2, 1.5));
             } else if (positionCategory === 'goalkeeper') {
-                s.defenses = Math.round((playerInfo.attributes.get('Goalkeeping') || 1) * this.randomValues(0.5, 3));
-                s.shots_on_target = teamGoals + this.randomValues(0, 3);
+                s.defenses = Math.round((playerInfo.attributes.get('Goalkeeping') || 1) * randomValues(0.5, 3));
+                s.shots_on_target = teamGoals + randomValues(0, 3);
             }
 
             const disciplineAttr = playerInfo.attributes.get('Discipline') || 20;
-            s.fouls_committed = Math.round(this.randomValues(0, 3) + (20 - disciplineAttr) / 10);
+            s.fouls_committed = Math.round(randomValues(0, 3) + (20 - disciplineAttr) / 10);
             s.fouls_committed = Math.min(s.fouls_committed, 5);
 
-            if (Math.random() < (MatchEngineService.YELLOW_CARD_BASE_PROB + (s.fouls_committed * 0.01) + (20 - disciplineAttr) * 0.005)) {
+            if (Math.random() < (MatchServiceUtils.YELLOW_CARD_BASE_PROB + (s.fouls_committed * 0.01) + (20 - disciplineAttr) * 0.005)) {
                 s.yellow_cards = 1;
-                if (Math.random() < (MatchEngineService.RED_CARD_BASE_PROB + (s.fouls_committed * 0.005) + (20 - disciplineAttr) * 0.001)) {
+                if (Math.random() < (MatchServiceUtils.RED_CARD_BASE_PROB + (s.fouls_committed * 0.005) + (20 - disciplineAttr) * 0.001)) {
                     s.red_cards = 1;
                 }
             }
@@ -304,7 +299,7 @@ class MatchEngineService {
         return stats;
     }
 
-    private static recordMatchEvent(
+    public static recordMatchEvent(
         databaseInstance: Database.Database,
         matchId: number,
         eventTime: number,
@@ -314,20 +309,20 @@ class MatchEngineService {
         details: string | null = null
     ): void {
         databaseInstance.prepare(`
-            INSERT INTO match_event (match_id, event_time, event_type, player_id, club_id, details)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `).run(matchId, eventTime, eventType, playerId, clubId, details);
+                INSERT INTO match_event (match_id, event_time, event_type, player_id, club_id, details)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `).run(matchId, eventTime, eventType, playerId, clubId, details);
     }
 
-    private static selectMOTMPlayers(playerStats: PlayerMatchStatsInput[], count = 1): number[] {
+    public static selectMOTMPlayers(playerStats: PlayerMatchStatsInput[], count = 1): number[] {
         return playerStats.sort((a, b) => b.rating - a.rating).slice(0, count).map(p => p.player_id);
     }
 
-    private static savePlayerStats(databaseInstance: Database.Database, stats: PlayerMatchStatsInput[]): void {
+    public static savePlayerStats(databaseInstance: Database.Database, stats: PlayerMatchStatsInput[]): void {
         const insertStmt = databaseInstance.prepare(`
-            INSERT INTO player_match_stats (match_id, player_id, club_id, rating, goals, assists, defenses, passes, interceptions, is_motm, shots, shots_on_target, tackles_won, fouls_committed, yellow_cards, red_cards)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
+                INSERT INTO player_match_stats (match_id, player_id, club_id, rating, goals, assists, defenses, passes, interceptions, is_motm, shots, shots_on_target, tackles_won, fouls_committed, yellow_cards, red_cards)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
 
         databaseInstance.transaction(() => {
             for (const stat of stats) {
@@ -353,7 +348,7 @@ class MatchEngineService {
         })();
     }
 
-    private static updateLeagueStandings(databaseInstance: Database.Database, match: MatchDbInfo & { home_score: number, away_score: number }): void {
+    public static updateLeagueStandings(databaseInstance: Database.Database, match: MatchDbInfo & { home_score: number, away_score: number }): void {
         const { competition_id, season_id, leg_number, home_club_id, away_club_id, home_score, away_score } = match;
         const currentMatchDay = leg_number;
 
@@ -429,211 +424,6 @@ class MatchEngineService {
             }
         })();
     }
-
-    public static simulateMatch(databaseInstance: Database.Database, matchId: number): {
-        matchId: number,
-        homeScore: number,
-        awayScore: number,
-        highlightPlayerIds: number[],
-        log: string
-    } {
-        fastify.log.info(`Simulating match ID: ${matchId}`);
-
-        const match = databaseInstance.prepare(`
-            SELECT
-                m.id,
-                m.home_club_id,
-                m.away_club_id,
-                ch.name as home_name,
-                ca.name as away_name,
-                m.competition_id,
-                m.season_id,
-                m.leg_number
-            FROM match m
-            JOIN club ch ON ch.id = m.home_club_id
-            JOIN club ca ON ca.id = m.away_club_id
-            WHERE m.id = ?
-        `).get(matchId) as MatchDbInfo;
-
-        if (!match) {
-            fastify.log.error(`Match with ID ${matchId} not found.`);
-            throw new Error(`Match with ID ${matchId} not found.`);
-        }
-
-        if (!MatchEngineService.lineupExists(databaseInstance, match.id, match.home_club_id)) {
-            MatchEngineService.generateAIAutoLineup(databaseInstance, match.id, match.home_club_id);
-        }
-        if (!MatchEngineService.lineupExists(databaseInstance, match.id, match.away_club_id)) {
-            MatchEngineService.generateAIAutoLineup(databaseInstance, match.id, match.away_club_id);
-        }
-
-        const homePlayers = MatchEngineService.getStartingPlayers(databaseInstance, match.id, match.home_club_id);
-        const awayPlayers = MatchEngineService.getStartingPlayers(databaseInstance, match.id, match.away_club_id);
-
-        if (homePlayers.length < 11 || awayPlayers.length < 11) {
-            fastify.log.error(`Insufficient players for match ${match.id}. Home: ${homePlayers.length}, Away: ${awayPlayers.length}`);
-            throw new Error("Insufficient players for match simulation.");
-        }
-
-        const homeTeamStrength = MatchEngineService.getTeamAttackDefense(homePlayers);
-        const awayTeamStrength = MatchEngineService.getTeamAttackDefense(awayPlayers);
-
-        const homeScore = MatchEngineService.simulateScore(homeTeamStrength.attack, awayTeamStrength.defense, MatchEngineService.HOME_ADVANTAGE_FACTOR);
-        const awayScore = MatchEngineService.simulateScore(awayTeamStrength.attack, homeTeamStrength.defense);
-
-        const homePlayerStats = MatchEngineService.generatePlayerStats(homePlayers, match.id, match.home_club_id, homeScore);
-        const awayPlayerStats = MatchEngineService.generatePlayerStats(awayPlayers, match.id, match.away_club_id, awayScore);
-
-        const allPlayerStats = [...homePlayerStats, ...awayPlayerStats];
-        const motmPlayerIds = MatchEngineService.selectMOTMPlayers(allPlayerStats, 2);
-
-        for (const motmId of motmPlayerIds) {
-            const statEntry = allPlayerStats.find(s => s.player_id === motmId);
-            if (statEntry) {
-                statEntry.is_motm = 1;
-            }
-        }
-
-        MatchEngineService.savePlayerStats(databaseInstance, allPlayerStats);
-
-        const playersById = new Map<number, PlayerLineupInfo>();
-        homePlayers.forEach(p => playersById.set(p.id, p));
-        awayPlayers.forEach(p => playersById.set(p.id, p));
-
-        MatchEngineService.recordMatchEvent(databaseInstance, match.id, 0, 'match_start', null, null, `Início da partida entre ${match.home_name} e ${match.away_name}.`);
-
-        homePlayerStats.forEach(stat => {
-            for (let g = 0; g < stat.goals; g++) {
-                const scorer = playersById.get(stat.player_id);
-                if (scorer) {
-                    const eventTime = this.randomValues(1, 90);
-                    const assistPlayer = allPlayerStats.find(s => s.assists > 0 && s.match_id === match.id && s.club_id === stat.club_id && s.player_id !== stat.player_id);
-                    const assistDetails = assistPlayer ? ` (Assistência de ${playersById.get(assistPlayer.player_id)!.position_name})` : '';
-                    MatchEngineService.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'goal',
-                        stat.player_id,
-                        stat.club_id,
-                        `Goal scored by ${scorer.position_name} ${scorer.overall}${assistDetails}`
-                    );
-                }
-            }
-        });
-
-        awayPlayerStats.forEach(stat => {
-            for (let g = 0; g < stat.goals; g++) {
-                const scorer = playersById.get(stat.player_id);
-                if (scorer) {
-                    const eventTime = this.randomValues(1, 90);
-                    const assistPlayer = allPlayerStats.find(s => s.assists > 0 && s.match_id === match.id && s.club_id === stat.club_id && s.player_id !== stat.player_id);
-                    const assistDetails = assistPlayer ? ` (Assistance from ${playersById.get(assistPlayer.player_id)!.position_name})` : '';
-                    MatchEngineService.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'goal',
-                        stat.player_id,
-                        stat.club_id,
-                        `Goal scored by ${scorer.position_name} ${scorer.overall}${assistDetails}`
-                    );
-                }
-            }
-        });
-
-        allPlayerStats.forEach(stat => {
-            const player = playersById.get(stat.player_id);
-            if (!player) return;
-
-            if ((stat.yellow_cards || 0) > 0) {
-                const eventTime = this.randomValues(1, 90);
-                MatchEngineService.recordMatchEvent(
-                    databaseInstance,
-                    match.id,
-                    eventTime,
-                    'yellow_card',
-                    stat.player_id,
-                    stat.club_id,
-                    `${player.position_name} received a yellow card.`
-                );
-            }
-            if ((stat.red_cards || 0) > 0) {
-                const eventTime = this.randomValues(1, 90);
-                MatchEngineService.recordMatchEvent(
-                    databaseInstance,
-                    match.id,
-                    eventTime,
-                    'red_card',
-                    stat.player_id,
-                    stat.club_id,
-                    `${player.position_name} received a red card.`
-                );
-            }
-
-            const injuryChance = MatchEngineService.INJURY_BASE_PROB + (100 - player.overall) * 0.0005;
-            if (Math.random() < injuryChance) {
-                const eventTime = this.randomValues(1, 90);
-                const injuryTypes = ["Distensão Muscular", "Entorse no Tornozelo", "Lesão no Isquiotibial", "Concussão"];
-                const randomInjury = injuryTypes[Math.floor(Math.random() * injuryTypes.length)];
-                MatchEngineService.recordMatchEvent(
-                    databaseInstance,
-                    match.id,
-                    eventTime,
-                    'injury',
-                    stat.player_id,
-                    stat.club_id,
-                    `${player.position_name} sofreu uma ${randomInjury}.`
-                );
-                // Você pode adicionar a lógica para inserir na tabela `player_injury` aqui se desejar
-            }
-
-            if ((stat.shots_on_target || 0) > 0 && player.position_name !== 'GK') {
-                for (let s = 0; s < (stat.shots_on_target || 0); s++) {
-                    const eventTime = this.randomValues(1, 90);
-                    MatchEngineService.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'shot_on_target',
-                        stat.player_id,
-                        stat.club_id,
-                        `${player.position_name} teve um chute a gol.`
-                    );
-                }
-            }
-
-            if (player.position_name === 'GK' && (stat.defenses || 0) > 0) {
-                for (let s = 0; s < (stat.defenses || 0); s++) {
-                    const eventTime = this.randomValues(1, 90);
-                    MatchEngineService.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'goalkeeper_save',
-                        stat.player_id,
-                        stat.club_id,
-                        `${player.position_name} fez uma defesa crucial.`
-                    );
-                }
-            }
-        });
-
-        MatchEngineService.recordMatchEvent(databaseInstance, match.id, 90, 'match_end', null, null, `End of game: ${match.home_name} ${homeScore} - ${awayScore} ${match.away_name}.`);
-
-        databaseInstance.prepare(`UPDATE match SET home_score = ?, away_score = ?, status = 'played' WHERE id = ?`)
-            .run(homeScore, awayScore, match.id);
-
-        MatchEngineService.updateLeagueStandings(databaseInstance, { ...match, home_score: homeScore, away_score: awayScore });
-
-        return {
-            matchId: match.id,
-            homeScore,
-            awayScore,
-            highlightPlayerIds: motmPlayerIds,
-            log: `Match Simulated: ${match.home_name} ${homeScore} - ${awayScore} ${match.away_name}.`
-        };
-    }
 }
 
-export default MatchEngineService;
+export default MatchServiceUtils;
