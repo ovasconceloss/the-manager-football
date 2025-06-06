@@ -53,7 +53,7 @@ class SeasonController {
         const databaseInstance = GameLoaderService.getCurrentDatabase();
 
         try {
-            const resultDate = LoopService.advanceGameDay(databaseInstance);
+            const resultDate = await LoopService.advanceGameDay(databaseInstance);
             return reply.status(200).send({ message: "Day successfully completed.", resultDate });
         } catch (err: unknown) {
             if (err instanceof AppError) {
