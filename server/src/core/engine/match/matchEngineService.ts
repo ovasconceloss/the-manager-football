@@ -1,70 +1,238 @@
-import Database from "better-sqlite3";
-import fastify from "../../../fastify";
-import { randomValues } from "../../../utils/utils";
-import { MatchDbInfo } from "../../../interfaces/match";
-import MatchServiceUtils from "./utils/matchServiceUtils";
-import { PlayerLineupInfo } from "../../../interfaces/player";
+import { parentPort, workerData } from 'worker_threads';
+import { ClubData, MatchDbInfo, PlayerData, PlayerLineupInfo, PlayerMatchStatsInput, PreloadedEngineData, SimulatedMatchResult } from '../../../interfaces/engine';
 
-class MatchEngineService {
-    private static readonly INJURY_BASE_PROB = 0.01;
-    private static readonly HOME_ADVANTAGE_FACTOR = 3;
+interface WorkerPreloadedData {
+    players: [number, PlayerData][];
+    playerContracts: [number, { club_id: number, player_id: number }[]][];
+    playerAttributes: [number, [string, number][]][];
+    attributeTypes: [number, string][];
+    playerPositions: [number, string][];
+    clubs: [number, ClubData][];
+    matchLineups: [number, [number, { player_id: number; position_played_id: number; is_starter: number; is_captain: number; }[]][]][];
+}
 
-    public static simulateMatch(databaseInstance: Database.Database, matchId: number): {
+interface WorkerInput {
+    matches: MatchDbInfo[];
+    preloadedData: WorkerPreloadedData;
+    logLevel: string;
+}
+
+const workerLogger = {
+    info: (...args: any[]) => { if (workerData.logLevel === 'info' || workerData.logLevel === 'debug') console.log('[WORKER INFO]', ...args); },
+    debug: (...args: any[]) => { if (workerData.logLevel === 'debug') console.log('[WORKER DEBUG]', ...args); },
+    warn: (...args: any[]) => console.warn('[WORKER WARN]', ...args),
+    error: (...args: any[]) => console.error('[WORKER ERROR]', ...args)
+};
+
+
+class MatchSimulator {
+    private preloadedData: PreloadedEngineData;
+    private static readonly HOME_ADVANTAGE = 5;
+
+    private static readonly POSITION_CATEGORIES: Record<string, 'attack' | 'midfield' | 'defense' | 'goalkeeper'> = {
+        'ST': 'attack', 'CF': 'attack', 'LW': 'attack', 'RW': 'attack', 'CAM': 'attack',
+        'LM': 'midfield', 'RM': 'midfield', 'CM': 'midfield', 'CDM': 'midfield',
+        'LB': 'defense', 'RB': 'defense', 'LWB': 'defense', 'RWB': 'defense', 'CB': 'defense',
+        'GK': 'goalkeeper'
+    };
+
+    private static readonly GOAL_PROB_BY_POSITION: { [key: string]: number } = { ST: 0.28, CF: 0.22, LW: 0.15, RW: 0.15, CAM: 0.08, CM: 0.06, CDM: 0.02, LM: 0.03, RM: 0.03, LB: 0.01, RB: 0.01, CB: 0.01, GK: 0.0 };
+    private static readonly ASSIST_PROB_BY_POSITION: { [key: string]: number } = { ST: 0.10, CF: 0.13, LW: 0.18, RW: 0.18, CAM: 0.18, CM: 0.10, CDM: 0.04, LM: 0.10, RM: 0.10, LB: 0.02, RB: 0.02, CB: 0.01, GK: 0.0 };
+
+    constructor(preloadedData: WorkerPreloadedData) {
+        this.preloadedData = {
+            players: new Map(preloadedData.players),
+            playerContracts: new Map(preloadedData.playerContracts.map(([id, arr]) => [id, arr])),
+            playerAttributes: new Map(preloadedData.playerAttributes.map(([id, arr]) => [id, new Map(arr)])),
+            attributeTypes: new Map(preloadedData.attributeTypes),
+            playerPositions: new Map(preloadedData.playerPositions),
+            clubs: new Map(preloadedData.clubs),
+            matchLineups: new Map(preloadedData.matchLineups.map(([matchId, clubLineupsArr]) => [matchId, new Map(clubLineupsArr)]))
+        };
+    }
+
+    private getStartingPlayersFromPreloadedData(matchId: number, clubId: number): PlayerLineupInfo[] {
+        const lineupEntries = this.preloadedData.matchLineups.get(matchId)?.get(clubId);
+        if (!lineupEntries) {
+            workerLogger.warn(`Lineup data not found for match ${matchId}, club ${clubId}.`);
+            return [];
+        }
+
+        const playersInLineup: PlayerLineupInfo[] = [];
+        for (const entry of lineupEntries) {
+            const player = this.preloadedData.players.get(entry.player_id);
+            const positionName = this.preloadedData.playerPositions.get(entry.position_played_id);
+
+            if (player && positionName) {
+                playersInLineup.push({
+                    id: player.id,
+                    overall: player.overall,
+                    position: positionName,
+                });
+            } else {
+                workerLogger.warn(`Incomplete data for player ${entry.player_id} in lineup for match ${matchId}, club ${clubId}.`);
+            }
+        }
+        return playersInLineup;
+    }
+
+    private getTeamAttackDefense(players: PlayerLineupInfo[]): { attack: number, defense: number } {
+        let attack = 0, defense = 0, countA = 0, countD = 0;
+        for (const p of players) {
+            if (["ST", "CF", "LW", "RW", "CAM"].includes(p.position)) {
+                attack += p.overall; countA++;
+            } else if (["CB", "LB", "RB", "CDM", "GK"].includes(p.position)) {
+                defense += p.overall; countD++;
+            }
+        }
+
+        const att = countA ? attack / countA : 60;
+        const def = countD ? defense / countD : 60;
+        return { attack: att, defense: def };
+    }
+
+    private simulateScore(
+        teamAttack: number,
+        opponentDefense: number,
+        homeAdvantage: number = 0
+    ): number {
+        const avgGoalsBase = 1.15;
+        const attackVsDefense = teamAttack + homeAdvantage - opponentDefense;
+        const strengthFactor = 0.018;
+        const expectedGoals = Math.max(
+            0,
+            avgGoalsBase + (attackVsDefense) * strengthFactor
+        );
+
+        let L = Math.exp(-expectedGoals);
+        let k = 0;
+        let p = 1;
+        do {
+            k++;
+            p *= Math.random();
+        } while (p > L);
+        return k - 1;
+    }
+
+    private generatePlayerStats(
+        players: PlayerLineupInfo[],
         matchId: number,
-        homeScore: number,
-        awayScore: number,
-        highlightPlayerIds: number[],
-        log: string
-    } {
-        fastify.log.info(`Simulating match ID: ${matchId}`);
+        clubId: number,
+        teamGoals: number
+    ): PlayerMatchStatsInput[] {
+        const goalProb = MatchSimulator.GOAL_PROB_BY_POSITION;
+        const assistProb = MatchSimulator.ASSIST_PROB_BY_POSITION;
 
-        const match = databaseInstance.prepare(`
-            SELECT
-                m.id,
-                m.home_club_id,
-                m.away_club_id,
-                ch.name as home_name,
-                ca.name as away_name,
-                m.competition_id,
-                m.season_id,
-                m.leg_number
-            FROM match m
-            JOIN club ch ON ch.id = m.home_club_id
-            JOIN club ca ON ca.id = m.away_club_id
-            WHERE m.id = ?
-        `).get(matchId) as MatchDbInfo;
+        const sortedPlayersByOverall = [...players].sort((a, b) => b.overall - a.overall);
 
-        if (!match) {
-            fastify.log.error(`Match with ID ${matchId} not found.`);
-            throw new Error(`Match with ID ${matchId} not found.`);
+        const stats = players.map(p => ({
+            player_id: p.id,
+            club_id: clubId,
+            match_id: matchId,
+            rating: 6.0,
+            goals: 0,
+            assists: 0,
+            is_motm: 0,
+        }));
+
+        for (let i = 0; i < teamGoals; i++) {
+            const weights = sortedPlayersByOverall.map(p => (goalProb[p.position] || 0.01) * (p.overall / 100));
+            const total = weights.reduce((a, b) => a + b, 0);
+            let r = Math.random() * total;
+            let idx = 0;
+
+            while (r > 0 && idx < weights.length) {
+                r -= weights[idx++];
+            }
+
+            idx = Math.max(0, idx - 1);
+            const playerStat = stats.find(s => s.player_id === sortedPlayersByOverall[idx].id);
+            if (playerStat) {
+                playerStat.goals += 1;
+            }
         }
 
-        if (!MatchServiceUtils.lineupExists(databaseInstance, match.id, match.home_club_id)) {
-            MatchServiceUtils.generateAIAutoLineup(databaseInstance, match.id, match.home_club_id);
-        }
-        if (!MatchServiceUtils.lineupExists(databaseInstance, match.id, match.away_club_id)) {
-            MatchServiceUtils.generateAIAutoLineup(databaseInstance, match.id, match.away_club_id);
+        for (let i = 0; i < teamGoals; i++) {
+            if (Math.random() < 0.85) {
+                const scorer = stats.find(s => s.goals > 0);
+                let possibleAssisters = sortedPlayersByOverall.filter(p => !scorer || p.id !== scorer.player_id);
+
+                if (possibleAssisters.length === 0) {
+                    possibleAssisters = sortedPlayersByOverall;
+                }
+
+                const weights = possibleAssisters.map(p => (assistProb[p.position] || 0.01) * (p.overall / 100));
+                const total = weights.reduce((a, b) => a + b, 0);
+
+                let r = Math.random() * total;
+                let idx = 0;
+
+                while (r > 0 && idx < weights.length) {
+                    r -= weights[idx++];
+                }
+
+                idx = Math.max(0, idx - 1);
+                const playerStat = stats.find(s => s.player_id === possibleAssisters[idx].id);
+                if (playerStat) {
+                    playerStat.assists += 1;
+                }
+            }
         }
 
-        const homePlayers = MatchServiceUtils.getStartingPlayers(databaseInstance, match.id, match.home_club_id);
-        const awayPlayers = MatchServiceUtils.getStartingPlayers(databaseInstance, match.id, match.away_club_id);
+        for (const s of stats) {
+            const playerInfo = players.find(p => p.id === s.player_id);
+            if (playerInfo) {
+                const base = 6.0 + (playerInfo.overall - 60) / 25;
+                const goalBonus = s.goals * 0.8;
+                const assistBonus = s.assists * 0.5;
+                s.rating = Math.min(10, parseFloat((base + goalBonus + assistBonus).toFixed(1)));
+                s.rating = Math.max(4.0, s.rating);
+            }
+        }
+
+        return stats;
+    }
+
+    private selectMOTMPlayers(playerStats: PlayerMatchStatsInput[], count = 1): number[] {
+        return playerStats.sort((a, b) => b.rating - a.rating).slice(0, count).map(p => p.player_id);
+    }
+
+    public simulateMatch(matchInfo: MatchDbInfo): SimulatedMatchResult {
+        workerLogger.info(`Worker simulating match ID: ${matchInfo.id}`);
+
+        const homePlayers = this.getStartingPlayersFromPreloadedData(matchInfo.id, matchInfo.home_club_id);
+        const awayPlayers = this.getStartingPlayersFromPreloadedData(matchInfo.id, matchInfo.away_club_id);
 
         if (homePlayers.length < 11 || awayPlayers.length < 11) {
-            fastify.log.error(`Insufficient players for match ${match.id}. Home: ${homePlayers.length}, Away: ${awayPlayers.length}`);
-            throw new Error("Insufficient players for match simulation.");
+            workerLogger.error(`Insufficient players for match ${matchInfo.id}. Home: ${homePlayers.length}, Away: ${awayPlayers.length}. Returning default result.`);
+            return {
+                matchId: matchInfo.id,
+                home_score: 0,
+                away_score: 0,
+                motmPlayerIds: [],
+                playerStats: [],
+                matchLogText: `Partida ${matchInfo.home_name} vs ${matchInfo.away_name} pulada devido a escalações incompletas.`,
+                competition_id: matchInfo.competition_id,
+                season_id: matchInfo.season_id,
+                leg_number: matchInfo.leg_number,
+                home_club_id: matchInfo.home_club_id,
+                away_club_id: matchInfo.away_club_id,
+                home_name: matchInfo.home_name,
+                away_name: matchInfo.away_name,
+            };
         }
 
-        const homeTeamStrength = MatchServiceUtils.getTeamAttackDefense(homePlayers);
-        const awayTeamStrength = MatchServiceUtils.getTeamAttackDefense(awayPlayers);
+        const homeTeamStrength = this.getTeamAttackDefense(homePlayers);
+        const awayTeamStrength = this.getTeamAttackDefense(awayPlayers);
 
-        const homeScore = MatchServiceUtils.simulateScore(homeTeamStrength.attack, awayTeamStrength.defense, MatchEngineService.HOME_ADVANTAGE_FACTOR);
-        const awayScore = MatchServiceUtils.simulateScore(awayTeamStrength.attack, homeTeamStrength.defense);
+        const homeScore = this.simulateScore(homeTeamStrength.attack, awayTeamStrength.defense, MatchSimulator.HOME_ADVANTAGE);
+        const awayScore = this.simulateScore(awayTeamStrength.attack, homeTeamStrength.defense);
 
-        const homePlayerStats = MatchServiceUtils.generatePlayerStats(homePlayers, match.id, match.home_club_id, homeScore);
-        const awayPlayerStats = MatchServiceUtils.generatePlayerStats(awayPlayers, match.id, match.away_club_id, awayScore);
+        const homePlayerStats = this.generatePlayerStats(homePlayers, matchInfo.id, matchInfo.home_club_id, homeScore);
+        const awayPlayerStats = this.generatePlayerStats(awayPlayers, matchInfo.id, matchInfo.away_club_id, awayScore);
 
         const allPlayerStats = [...homePlayerStats, ...awayPlayerStats];
-        const motmPlayerIds = MatchServiceUtils.selectMOTMPlayers(allPlayerStats, 2);
+        const motmPlayerIds = this.selectMOTMPlayers(allPlayerStats, 2);
 
         for (const motmId of motmPlayerIds) {
             const statEntry = allPlayerStats.find(s => s.player_id === motmId);
@@ -73,145 +241,43 @@ class MatchEngineService {
             }
         }
 
-        MatchServiceUtils.savePlayerStats(databaseInstance, allPlayerStats);
+        const matchLogText = `${matchInfo.home_name} ${homeScore} x ${awayScore} ${matchInfo.away_name}`;
 
-        const playersById = new Map<number, PlayerLineupInfo>();
-        homePlayers.forEach(p => playersById.set(p.id, p));
-        awayPlayers.forEach(p => playersById.set(p.id, p));
-
-        MatchServiceUtils.recordMatchEvent(databaseInstance, match.id, 0, 'match_start', null, null, `Start of the match between ${match.home_name} e ${match.away_name}.`);
-
-        homePlayerStats.forEach(stat => {
-            for (let g = 0; g < stat.goals; g++) {
-                const scorer = playersById.get(stat.player_id);
-                if (scorer) {
-                    const eventTime = randomValues(1, 90);
-                    const assistPlayer = allPlayerStats.find(s => s.assists > 0 && s.match_id === match.id && s.club_id === stat.club_id && s.player_id !== stat.player_id);
-                    const assistDetails = assistPlayer ? ` (Assistance from ${playersById.get(assistPlayer.player_id)!.position_name})` : '';
-                    MatchServiceUtils.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'goal',
-                        stat.player_id,
-                        stat.club_id,
-                        `Goal scored by ${scorer.position_name} ${scorer.overall}${assistDetails}`
-                    );
-                }
-            }
-        });
-
-        awayPlayerStats.forEach(stat => {
-            for (let g = 0; g < stat.goals; g++) {
-                const scorer = playersById.get(stat.player_id);
-                if (scorer) {
-                    const eventTime = randomValues(1, 90);
-                    const assistPlayer = allPlayerStats.find(s => s.assists > 0 && s.match_id === match.id && s.club_id === stat.club_id && s.player_id !== stat.player_id);
-                    const assistDetails = assistPlayer ? ` (Assistance from ${playersById.get(assistPlayer.player_id)!.position_name})` : '';
-                    MatchServiceUtils.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'goal',
-                        stat.player_id,
-                        stat.club_id,
-                        `Goal scored by ${scorer.position_name} ${scorer.overall}${assistDetails}`
-                    );
-                }
-            }
-        });
-
-        allPlayerStats.forEach(stat => {
-            const player = playersById.get(stat.player_id);
-            if (!player) return;
-
-            if ((stat.yellow_cards || 0) > 0) {
-                const eventTime = randomValues(1, 90);
-                MatchServiceUtils.recordMatchEvent(
-                    databaseInstance,
-                    match.id,
-                    eventTime,
-                    'yellow_card',
-                    stat.player_id,
-                    stat.club_id,
-                    `${player.position_name} received a yellow card.`
-                );
-            }
-            if ((stat.red_cards || 0) > 0) {
-                const eventTime = randomValues(1, 90);
-                MatchServiceUtils.recordMatchEvent(
-                    databaseInstance,
-                    match.id,
-                    eventTime,
-                    'red_card',
-                    stat.player_id,
-                    stat.club_id,
-                    `${player.position_name} received a red card.`
-                );
-            }
-
-            const injuryChance = MatchEngineService.INJURY_BASE_PROB + (100 - player.overall) * 0.0005;
-            if (Math.random() < injuryChance) {
-                const eventTime = randomValues(1, 90);
-                const injuryTypes = ["Muscle Strain", "Ankle Sprain", "ACL Tear", "Hamstring Injury", "Concussion", "Fracture", "Tendonitis"];
-                const randomInjury = injuryTypes[Math.floor(Math.random() * injuryTypes.length)];
-                MatchServiceUtils.recordMatchEvent(
-                    databaseInstance,
-                    match.id,
-                    eventTime,
-                    'injury',
-                    stat.player_id,
-                    stat.club_id,
-                    `${player.position_name} suffered a ${randomInjury}.`
-                );
-            }
-
-            if ((stat.shots_on_target || 0) > 0 && player.position_name !== 'GK') {
-                for (let s = 0; s < (stat.shots_on_target || 0); s++) {
-                    const eventTime = randomValues(1, 90);
-                    MatchServiceUtils.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'shot_on_target',
-                        stat.player_id,
-                        stat.club_id,
-                        `${player.position_name} had a shot on goal.`
-                    );
-                }
-            }
-
-            if (player.position_name === 'GK' && (stat.defenses || 0) > 0) {
-                for (let s = 0; s < (stat.defenses || 0); s++) {
-                    const eventTime = randomValues(1, 90);
-                    MatchServiceUtils.recordMatchEvent(
-                        databaseInstance,
-                        match.id,
-                        eventTime,
-                        'goalkeeper_save',
-                        stat.player_id,
-                        stat.club_id,
-                        `${player.position_name} made a crucial save.`
-                    );
-                }
-            }
-        });
-
-        MatchServiceUtils.recordMatchEvent(databaseInstance, match.id, 90, 'match_end', null, null, `End of game: ${match.home_name} ${homeScore} - ${awayScore} ${match.away_name}.`);
-
-        databaseInstance.prepare(`UPDATE match SET home_score = ?, away_score = ?, status = 'played' WHERE id = ?`)
-            .run(homeScore, awayScore, match.id);
-
-        MatchServiceUtils.updateLeagueStandings(databaseInstance, { ...match, home_score: homeScore, away_score: awayScore });
+        workerLogger.info(`Worker finished simulating match ID: ${matchInfo.id}. Score: ${homeScore}-${awayScore}`);
 
         return {
-            matchId: match.id,
-            homeScore,
-            awayScore,
-            highlightPlayerIds: motmPlayerIds,
-            log: `Match Simulated: ${match.home_name} ${homeScore} - ${awayScore} ${match.away_name}.`
+            matchId: matchInfo.id,
+            home_score: homeScore,
+            away_score: awayScore,
+            motmPlayerIds: motmPlayerIds,
+            playerStats: allPlayerStats,
+            matchLogText: matchLogText,
+            competition_id: matchInfo.competition_id,
+            season_id: matchInfo.season_id,
+            leg_number: matchInfo.leg_number,
+            home_club_id: matchInfo.home_club_id,
+            away_club_id: matchInfo.away_club_id,
+            home_name: matchInfo.home_name,
+            away_name: matchInfo.away_name,
         };
     }
 }
 
-export default MatchEngineService;
+if (!parentPort) {
+    throw new Error('This script must be run as a worker thread.');
+}
+
+const { matches, preloadedData } = workerData as WorkerInput;
+const simulator = new MatchSimulator(preloadedData);
+const simulatedResults: SimulatedMatchResult[] = [];
+
+for (const match of matches) {
+    try {
+        const result = simulator.simulateMatch(match);
+        simulatedResults.push(result);
+    } catch (error: any) {
+        workerLogger.error(`Error simulating match ${match.id} in worker: ${error.message}`);
+    }
+}
+
+parentPort.postMessage(simulatedResults);
