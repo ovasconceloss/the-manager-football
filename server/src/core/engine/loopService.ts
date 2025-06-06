@@ -196,7 +196,7 @@ class LoopService {
             if (matchesChunk.length === 0) continue;
 
             const workerPromise = new Promise<SimulatedMatchResult[]>((resolve, reject) => {
-                const workerPath = path.resolve(__dirname, '../../workers/matchWorker.ts');
+                const workerPath = path.resolve(__dirname, './match/matchEngineService.ts');
                 const worker = new Worker(workerPath, {
                     workerData: {
                         matches: matchesChunk,
@@ -211,7 +211,7 @@ class LoopService {
                         },
                         logLevel: 'info'
                     },
-                    execArgv: /\.ts$/.test(workerPath) ? ['-r', 'ts-node/register'] : undefined
+                    execArgv: ['-r', 'ts-node/register']
                 });
 
                 worker.on('message', (workerResults: SimulatedMatchResult[]) => {
@@ -219,6 +219,7 @@ class LoopService {
                 });
 
                 worker.on('error', (err) => {
+                    console.log(err);
                     fastify.log.error(`Worker error: ${err.message}`);
                     reject(err);
                 });
@@ -241,8 +242,8 @@ class LoopService {
 
             databaseInstance.transaction(() => {
                 const savePlayerStatsStmt = databaseInstance.prepare(`
-                    INSERT INTO player_match_stats (match_id, player_id, club_id, rating, goals, assists, is_motm)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO player_match_stats (match_id, player_id, club_id, rating, goals, assists, defenses, passes, interceptions, is_motm)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
                 `);
                 const recordMatchLogStmt = databaseInstance.prepare(`
                     INSERT INTO match_log (match_id, log_text) VALUES (?, ?)
@@ -255,7 +256,7 @@ class LoopService {
                     for (const stat of result.playerStats) {
                         savePlayerStatsStmt.run(
                             stat.match_id, stat.player_id, stat.club_id, stat.rating,
-                            stat.goals, stat.assists, stat.is_motm
+                            stat.goals, stat.assists, stat.defenses, stat.is_motm
                         );
                     }
 
@@ -268,6 +269,7 @@ class LoopService {
             fastify.log.info("All simulated match data saved to database successfully.");
 
         } catch (error: any) {
+            console.log(error);
             fastify.log.error(`Error during worker simulation or database saving: ${error.message}`);
             throw error;
         }

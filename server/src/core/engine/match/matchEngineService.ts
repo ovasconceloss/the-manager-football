@@ -1,3 +1,4 @@
+import { randomValues } from '../../../utils/utils';
 import { parentPort, workerData } from 'worker_threads';
 import { ClubData, MatchDbInfo, PlayerData, PlayerLineupInfo, PlayerMatchStatsInput, PreloadedEngineData, SimulatedMatchResult } from '../../../interfaces/engine';
 
@@ -118,7 +119,8 @@ class MatchSimulator {
         players: PlayerLineupInfo[],
         matchId: number,
         clubId: number,
-        teamGoals: number
+        teamGoals: number,
+        opponentGoals: number
     ): PlayerMatchStatsInput[] {
         const goalProb = MatchSimulator.GOAL_PROB_BY_POSITION;
         const assistProb = MatchSimulator.ASSIST_PROB_BY_POSITION;
@@ -132,6 +134,7 @@ class MatchSimulator {
             rating: 6.0,
             goals: 0,
             assists: 0,
+            defenses: 0,
             is_motm: 0,
         }));
 
@@ -179,13 +182,34 @@ class MatchSimulator {
             }
         }
 
+        const goalkeeperStat = stats.find(s => {
+            const player = players.find(p => p.id === s.player_id);
+            return player && player.position === 'GK';
+        });
+
+        if (goalkeeperStat) {
+            const goalkeeperInfo = players.find(p => p.id === goalkeeperStat.player_id);
+            if (goalkeeperInfo) {
+
+                const baseSaves = randomValues(3, 7);
+                const overallImpact = (goalkeeperInfo.overall / 100);
+
+                const savesFromConcededGoals = Math.max(0, opponentGoals - randomValues(0, 2));
+
+                goalkeeperStat.defenses = Math.round((baseSaves * overallImpact) + (savesFromConcededGoals * overallImpact));
+                goalkeeperStat.defenses = Math.max(goalkeeperStat.defenses, 0);
+            }
+        }
+
         for (const s of stats) {
             const playerInfo = players.find(p => p.id === s.player_id);
             if (playerInfo) {
                 const base = 6.0 + (playerInfo.overall - 60) / 25;
                 const goalBonus = s.goals * 0.8;
                 const assistBonus = s.assists * 0.5;
-                s.rating = Math.min(10, parseFloat((base + goalBonus + assistBonus).toFixed(1)));
+                const defenseBonus = (s.defenses || 0) * 0.15;
+
+                s.rating = Math.min(10, parseFloat((base + goalBonus + assistBonus + defenseBonus).toFixed(1)));
                 s.rating = Math.max(4.0, s.rating);
             }
         }
@@ -228,8 +252,8 @@ class MatchSimulator {
         const homeScore = this.simulateScore(homeTeamStrength.attack, awayTeamStrength.defense, MatchSimulator.HOME_ADVANTAGE);
         const awayScore = this.simulateScore(awayTeamStrength.attack, homeTeamStrength.defense);
 
-        const homePlayerStats = this.generatePlayerStats(homePlayers, matchInfo.id, matchInfo.home_club_id, homeScore);
-        const awayPlayerStats = this.generatePlayerStats(awayPlayers, matchInfo.id, matchInfo.away_club_id, awayScore);
+        const homePlayerStats = this.generatePlayerStats(homePlayers, matchInfo.id, matchInfo.home_club_id, homeScore, awayScore);
+        const awayPlayerStats = this.generatePlayerStats(awayPlayers, matchInfo.id, matchInfo.away_club_id, awayScore, homeScore);
 
         const allPlayerStats = [...homePlayerStats, ...awayPlayerStats];
         const motmPlayerIds = this.selectMOTMPlayers(allPlayerStats, 2);
