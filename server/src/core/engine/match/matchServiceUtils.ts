@@ -1,9 +1,9 @@
 import Database from "better-sqlite3";
-import fastify from "../../../../fastify";
-import { randomValues } from "../../../../utils/utils";
-import { MatchDbInfo } from "../../../../interfaces/match";
-import { LeagueStandingData } from "../../../../interfaces/league";
-import { PlayerLineupInfo, PlayerMatchStatsInput } from "../../../../interfaces/player";
+import fastify from "../../../fastify";
+import { randomValues } from "../../../utils/utils";
+import { MatchDbInfo } from "../../../interfaces/engine";
+import { LeagueStandingData } from "../../../interfaces/league";
+import { PlayerLineupInfo, PlayerMatchStatsInput } from "../../../interfaces/player";
 
 class MatchServiceUtils {
     private static readonly RED_CARD_BASE_PROB = 0.002;
