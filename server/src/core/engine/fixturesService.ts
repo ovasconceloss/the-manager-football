@@ -25,18 +25,70 @@ interface CompetitionDbInfo {
 }
 
 class FixtureService {
+    private static readonly HOLIDAYS: string[] = [
+        '01-01',
+        '12-25'
+    ];
+
+    private static isHoliday(date: Date): boolean {
+        const monthDay = date.toISOString().substring(5, 10);
+        return FixtureService.HOLIDAYS.includes(monthDay);
+    }
+
+    private static isWeekend(date: Date): boolean {
+        const dayOfWeek = date.getDay();
+        return dayOfWeek === 0 || dayOfWeek === 6;
+    }
+
+    private static getNextValidMatchDate(date: Date, seasonEndDate: Date, logger: any): Date {
+        let newDate = new Date(date);
+        let attempts = 0;
+        const MAX_ATTEMPTS = 365 * 2;
+        newDate.setDate(newDate.getDate() + 1);
+
+        while (attempts < MAX_ATTEMPTS) {
+            if (newDate > seasonEndDate) {
+                logger.warn(`getNextValidMatchDate reached or exceeded season end date ${seasonEndDate.toISOString().split('T')[0]}. No more valid dates.`);
+                return newDate;
+            }
+
+            if (FixtureService.isHoliday(newDate)) {
+                logger.debug(`Skipping holiday: ${newDate.toISOString().split('T')[0]}`);
+                newDate.setDate(newDate.getDate() + 1);
+                attempts++;
+                continue;
+            }
+
+            if (!FixtureService.isWeekend(newDate)) {
+                logger.debug(`Skipping weekday: ${newDate.toISOString().split('T')[0]}`);
+                newDate.setDate(newDate.getDate() + 1);
+                attempts++;
+                continue;
+            }
+
+            return newDate;
+        }
+        logger.error("Could not find a valid match date within reasonable attempts, season might be too short or holidays too many.");
+        return newDate;
+    }
+
     public static createFixtures(
         databaseInstance: Database.Database,
         seasonId: number,
     ) {
         try {
+            const end_date = '2026-06-01';
+            const start_date = '2025-08-01';
 
             const seasonInfo = databaseInstance.prepare("SELECT id, start_date, end_date FROM season WHERE id = ?").get(seasonId) as SeasonDbInfo;
+
             if (!seasonInfo) {
                 fastify.log.error(`Error: Season with ID ${seasonId} not found. Cannot generate fixtures.`);
                 return;
             }
-            const seasonStartDate = new Date(seasonInfo.start_date + 'T12:00:00Z');
+
+            const seasonEndDate = new Date(end_date + 'T23:59:59Z');
+            const seasonStartDate = new Date(start_date + 'T00:00:00Z');
 
             const nationalLeagueCompetitions = databaseInstance.prepare("SELECT id, name, type, nation_id FROM competition WHERE type = 'league' AND nation_id IS NOT NULL").all() as CompetitionDbInfo[];
 
@@ -63,7 +115,10 @@ class FixtureService {
                 INSERT INTO match (competition_id, season_id, stage_id, home_club_id, away_club_id, home_score, away_score, match_date, status, leg_number)
                 VALUES (?, ?, ?, ?, ?, 0, 0, ?, 'scheduled', ?)
             `);
+
             const generateFixturesTransaction = databaseInstance.transaction(() => {
+                const leagueCurrentMatchDate = new Map<number, Date>();
+
                 for (const [competitionId, leagueInfo] of leagueDetailsMap.entries()) {
                     const leagueName = leagueInfo.name;
                     const leagueNationId = leagueInfo.nationId;
@@ -89,7 +144,7 @@ class FixtureService {
                         1,
                         'league',
                         'two_legs',
-                        1  
+                        1
                     ) as CompetitionStageInsertResult;
                     const leagueStageId = stageInsertResult.lastInsertRowid;
 
@@ -99,75 +154,94 @@ class FixtureService {
 
                     const totalTeams = clubIds.length;
                     const totalRoundsPerLeg = (totalTeams - 1);
-                    const half = totalTeams / 2;
+                    const matchesPerRound = totalTeams / 2;
+                    const totalRounds = totalRoundsPerLeg * 2;
 
-                    let currentMatchDate = new Date(seasonStartDate); 
+                    const firstMatchDate = new Date(seasonStartDate);
+                    firstMatchDate.setMonth(firstMatchDate.getMonth() + 1);
 
-                    for (let round = 1; round <= totalRoundsPerLeg; round++) {
-                        const matchDateString = currentMatchDate.toISOString().split("T")[0];
+                    const weeksAvailable = Math.floor(
+                        (seasonEndDate.getTime() - firstMatchDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+                    );
 
-                        for (let i = 0; i < half; i++) {
-                            const homeIdx = i;
-                            const awayIdx = totalTeams - 1 - i;
+                    const weekInterval = Math.max(1, Math.floor(weeksAvailable / totalRounds));
 
-                            const homeClubId = clubIds[homeIdx];
-                            const awayClubId = clubIds[awayIdx];
+                    let matchDayDate = new Date(firstMatchDate);
 
-                            if (homeClubId === -1 || awayClubId === -1) continue;
+                    for (let leg = 0; leg < 2; leg++) {
+                        fastify.log.info(`Generating Leg ${leg + 1} for ${leagueName}...`);
 
-                            insertMatchStatement.run(
-                                competitionId,
-                                seasonId,
-                                leagueStageId,
-                                homeClubId,
-                                awayClubId,
-                                matchDateString,
-                                round
-                            );
+                        const currentLegClubIds = [...clubIdsOriginal];
+                        if (currentLegClubIds.length % 2 !== 0) {
+                            currentLegClubIds.push(-1);
                         }
 
-                        const fixedTeam = clubIds[0];
-                        const rotatingTeams = clubIds.slice(1);
-                        rotatingTeams.unshift(rotatingTeams.pop()!);
-                        clubIds.splice(1, rotatingTeams.length, ...rotatingTeams);
-                        clubIds[0] = fixedTeam;
+                        for (let round = 0; round < totalRoundsPerLeg; round++) {
+                            while (!FixtureService.isWeekend(matchDayDate) || FixtureService.isHoliday(matchDayDate)) {
+                                matchDayDate.setDate(matchDayDate.getDate() + 1);
+                            }
+                            if (matchDayDate > seasonEndDate) {
+                                fastify.log.warn(`Season end reached for ${leagueName} during fixture generation. Stopping.`);
+                                break;
+                            }
+                            const matchDateString = matchDayDate.toISOString().split("T")[0];
 
-                        currentMatchDate.setDate(currentMatchDate.getDate() + 7);
-                    }
+                            const roundMatches: { home: number, away: number }[] = [];
+                            for (let i = 0; i < matchesPerRound; i++) {
+                                let homeClubId = currentLegClubIds[i];
+                                let awayClubId = currentLegClubIds[totalTeams - 1 - i];
 
-                    for (let round = 1; round <= totalRoundsPerLeg; round++) {
-                        const matchDateString = currentMatchDate.toISOString().split("T")[0];
+                                if (leg === 1) {
+                                    [homeClubId, awayClubId] = [awayClubId, homeClubId];
+                                }
 
-                        for (let i = 0; i < half; i++) {
-                            const homeIdx = i;
-                            const awayIdx = totalTeams - 1 - i;
+                                if (homeClubId === -1 || awayClubId === -1) {
+                                    continue;
+                                }
+                                roundMatches.push({ home: homeClubId, away: awayClubId });
+                            }
 
-                            const homeClubIdOriginal = clubIds[homeIdx];
-                            const awayClubIdOriginal = clubIds[awayIdx];
+                            FixtureService.shuffleArray(roundMatches);
 
-                            if (homeClubIdOriginal === -1 || awayClubIdOriginal === -1) continue;
+                            let currentMatchDateForThisRound = new Date(matchDayDate);
+                            const maxDaysSpread = Math.min(roundMatches.length, 3);
 
-                            const homeClubId = awayClubIdOriginal;
-                            const awayClubId = homeClubIdOriginal;
+                            for (let i = 0; i < roundMatches.length; i++) {
+                                const match = roundMatches[i];
+                                let dateToAssign = new Date(currentMatchDateForThisRound);
 
-                            insertMatchStatement.run(
-                                competitionId,
-                                seasonId,
-                                leagueStageId,
-                                homeClubId,
-                                awayClubId,
-                                matchDateString,
-                                round + totalRoundsPerLeg
-                            );
+                                while (FixtureService.isHoliday(dateToAssign)) {
+                                    dateToAssign.setDate(dateToAssign.getDate() + 1);
+                                }
+
+                                if (i > 0 && i < maxDaysSpread) {
+                                    dateToAssign.setDate(dateToAssign.getDate() + 1);
+                                    while (FixtureService.isHoliday(dateToAssign)) {
+                                        dateToAssign.setDate(dateToAssign.getDate() + 1);
+                                    }
+                                }
+
+                                const finalMatchDateString = dateToAssign.toISOString().split("T")[0];
+
+                                insertMatchStatement.run(
+                                    competitionId,
+                                    seasonId,
+                                    leagueStageId,
+                                    match.home,
+                                    match.away,
+                                    finalMatchDateString,
+                                    (leg * totalRoundsPerLeg) + round + 1
+                                );
+                            }
+
+                            const fixedTeam = currentLegClubIds[0];
+                            const rotatingTeams = currentLegClubIds.slice(1);
+                            rotatingTeams.unshift(rotatingTeams.pop()!);
+                            currentLegClubIds.splice(1, rotatingTeams.length, ...rotatingTeams);
+                            currentLegClubIds[0] = fixedTeam;
+
+                            matchDayDate.setDate(matchDayDate.getDate() + (weekInterval * 7));
                         }
-
-                        const fixedTeam = clubIds[0];
-                        const rotatingTeams = clubIds.slice(1);
-                        rotatingTeams.unshift(rotatingTeams.pop()!);
-                        clubIds.splice(1, rotatingTeams.length, ...rotatingTeams);
-                        clubIds[0] = fixedTeam;
-
-                        currentMatchDate.setDate(currentMatchDate.getDate() + 7);
                     }
                 }
             });
@@ -178,6 +252,13 @@ class FixtureService {
         } catch (err: unknown) {
             fastify.log.error(`Error generating season fixtures for season ID ${seasonId}:`, err);
             throw err;
+        }
+    }
+
+    private static shuffleArray<T>(array: T[]): void {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
         }
     }
 }
