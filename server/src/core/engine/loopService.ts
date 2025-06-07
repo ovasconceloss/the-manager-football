@@ -2,7 +2,7 @@ import * as path from 'path';
 import fastify from '../../fastify';
 import Database from "better-sqlite3";
 import { Worker } from 'worker_threads';
-import MatchServiceUtils from './match/utils/matchServiceUtils';
+import MatchServiceUtils from './match/matchServiceUtils';
 import { PreloadedEngineData, SimulatedMatchResult, GameLoopResult, PlayerData, ClubData, MatchDbInfo } from "../../interfaces/engine";
 
 class LoopService {
