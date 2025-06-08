@@ -3,11 +3,14 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { AppError } from './errors/errors';
 
+import clubRoutes from './routes/clubRoutes';
 import saveRoutes from './routes/saveRoutes';
+import nationRoutes from './routes/nationRoutes';
 import seasonRoutes from './routes/seasonRoutes';
 import playerRoutes from './routes/playerRoutes';
 import leagueRoutes from './routes/leagueRoutes';
 import fixtureRoutes from './routes/fixtureRoutes';
+import managerRoutes from './routes/managerRoutes';
 
 const fastify = Fastify({
     logger: {
@@ -30,11 +33,14 @@ fastify.register(cors, {
     credentials: true,
 });
 
+fastify.register(clubRoutes);
 fastify.register(saveRoutes);
+fastify.register(nationRoutes);
 fastify.register(seasonRoutes);
 fastify.register(playerRoutes);
 fastify.register(leagueRoutes);
 fastify.register(fixtureRoutes);
+fastify.register(managerRoutes);
 
 fastify.server.setTimeout(600000);
 

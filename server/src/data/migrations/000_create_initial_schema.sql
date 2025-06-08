@@ -576,8 +576,8 @@ CREATE INDEX idx_formation_position_player_position_id ON formation_position (pl
 
 -- Insertion example for a 4-4-2 formation (simplified)
 -- INSERT INTO formation_position (formation_id, player_position_id, x_coord, y_coord) VALUES
--- ((SELECT id FROM formation WHERE name = '4-4-2 Flat'), (SELECT id FROM player_position WHERE name = 'Goleiro'), 1, 1),
--- ((SELECT id FROM formation WHERE name = '4-4-2 Flat'), (SELECT id FROM player_position WHERE name = 'Lateral Direito'), 2, 1),
+-- ((SELECT id FROM formation WHERE name = '4-4-2 Flat'), (SELECT id FROM player_position WHERE name = 'goalkeeper'), 1, 1),
+-- ((SELECT id FROM formation WHERE name = '4-4-2 Flat'), (SELECT id FROM player_position WHERE name = 'right back'), 2, 1),
 
 -- table: league_standing
 CREATE TABLE league_standing (
@@ -866,6 +866,15 @@ CREATE INDEX idx_player_suspension_player_id ON player_suspension (player_id);
 CREATE INDEX idx_player_suspension_reason_type_id ON player_suspension (suspension_reason_type_id);
 CREATE INDEX idx_player_suspension_start_date ON player_suspension (start_date);
 CREATE INDEX idx_player_suspension_match_id_origin ON player_suspension (match_id_origin);
+
+-- table: user_save
+CREATE TABLE user_save (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_club_id INT NOT NULL,
+  user_staff_id INT NOT NULL,
+  FOREIGN KEY (user_club_id) REFERENCES club(id),
+  FOREIGN KEY (user_staff_id) REFERENCES staff(id)
+);
 
 -- table: game_state
 CREATE TABLE game_state (
