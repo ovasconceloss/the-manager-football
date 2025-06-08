@@ -3,6 +3,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { AppError } from './errors/errors';
 
+import clubRoutes from './routes/clubRoutes';
 import saveRoutes from './routes/saveRoutes';
 import seasonRoutes from './routes/seasonRoutes';
 import playerRoutes from './routes/playerRoutes';
@@ -30,6 +31,7 @@ fastify.register(cors, {
     credentials: true,
 });
 
+fastify.register(clubRoutes);
 fastify.register(saveRoutes);
 fastify.register(seasonRoutes);
 fastify.register(playerRoutes);
