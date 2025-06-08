@@ -1,45 +1,17 @@
 import fastify from "../fastify";
 import Database from "better-sqlite3";
 import { AppError } from "../errors/errors";
-import ClubModel from "../models/clubModel";
-import FinanceModel from "../models/financeModel";
 import DatabaseService from "../data/databaseService";
 
 class GameLoaderService {
     private static currentFilename: string | null = null;
     private static database: Database.Database | null = null;
 
-    private static async initializeClubFinances(): Promise<void> {
-        fastify.log.info("Initializing financial summaries for all clubs...");
-
-        const clubs = await ClubModel.getAllClubs();
-
-        for (const club of clubs as { club_id: number; club_name: string; reputation: number }[]) {
-            const initialBalance = club.reputation * 5000;
-            const transferBudget = club.reputation * 2000;
-            const salaryBudget = club.reputation * 1500;
-
-            try {
-                await FinanceModel.initializeClubFinanceSummary(
-                    club.club_id,
-                    initialBalance,
-                    transferBudget,
-                    salaryBudget
-                );
-            } catch (error) {
-                fastify.log.error(`Error initialising finances for club ${club.club_name} (ID: ${club.club_id}):`, error);
-            }
-        }
-        fastify.log.info("Financial summaries initialized for all clubs successfully.");
-    }
-
     public static newGame(): void {
         try {
             if (this.database) this.database.close();
 
             const database = DatabaseService.connectDatabase("create");
-
-            GameLoaderService.initializeClubFinances();
 
             this.database = database;
             this.currentFilename = null;

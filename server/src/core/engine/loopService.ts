@@ -2,9 +2,10 @@ import * as path from 'path';
 import fastify from '../../fastify';
 import Database from "better-sqlite3";
 import { Worker } from 'worker_threads';
-import MatchServiceUtils from './match/matchServiceUtils';
-import { PreloadedEngineData, SimulatedMatchResult, GameLoopResult, PlayerData, ClubData, MatchDbInfo } from "../../interfaces/engine";
 import FinanceModel from '../../models/financeModel';
+import MatchServiceUtils from './match/matchServiceUtils';
+import MatchFinanceService from './match/matchFinanceService';
+import { PreloadedEngineData, SimulatedMatchResult, GameLoopResult, PlayerData, ClubData, MatchDbInfo } from "../../interfaces/engine";
 
 class LoopService {
     private static async preloadEngineData(databaseInstance: Database.Database, currentMatchDate: string): Promise<PreloadedEngineData> {
@@ -267,6 +268,15 @@ class LoopService {
                 }
             })();
 
+            for (const result of allSimulatedResults) {
+                const homeClub = preloadedData.clubs.get(result.home_club_id);
+                const home_club_reputation = homeClub?.reputation ?? 0;
+
+                const matchResultWithReputation = { ...result, home_club_reputation };
+
+                await MatchFinanceService.processMatchFinancials(matchResultWithReputation, databaseInstance);
+            }
+
             fastify.log.info("All simulated match data saved to database successfully.");
 
         } catch (error: any) {
@@ -281,13 +291,56 @@ class LoopService {
 
         if (nextDate.getDate() === 1) {
             fastify.log.info(`Processing monthly payments for ${nextDateFormatted}...`);
-            const clubs = databaseInstance.prepare(`SELECT id FROM club`).all() as { id: number }[];
+            const clubs = databaseInstance.prepare(`SELECT id, reputation, name FROM club`).all() as { id: number, reputation: number, name: string }[];
 
             for (const club of clubs) {
                 try {
                     await FinanceModel.processSalaryPayments(club.id, nextDateFormatted);
                 } catch (error) {
                     fastify.log.error(`Failed to process salaries for club ${club.id}:`, error);
+                }
+
+                const baseMerchandiseRevenue = club.reputation * 500;
+                const monthlyMerchandiseRevenue = baseMerchandiseRevenue + Math.floor(Math.random() * 2000);
+
+                try {
+                    await FinanceModel.recordTransaction(
+                        club.id,
+                        'Merchandise Sales',
+                        monthlyMerchandiseRevenue,
+                        `Monthly merchandising revenue.`,
+                        'balance'
+                    );
+                } catch (error) {
+                    fastify.log.error(`Error registering merchandising revenue for ${club.name}:`, error);
+                }
+
+                const monthlySponsorship = club.reputation * 300;
+
+                try {
+                    await FinanceModel.recordTransaction(
+                        club.id,
+                        'Sponsorship',
+                        monthlySponsorship,
+                        `Monthly sponsorship income.`,
+                        'balance'
+                    );
+                } catch (error) {
+                    fastify.log.error(`Error registering sponsorship for ${club.name}:`, error);
+                }
+
+                const monthlyBroadcastRevenue = club.reputation * 400;
+
+                try {
+                    await FinanceModel.recordTransaction(
+                        club.id,
+                        'Broadcast Revenue',
+                        monthlyBroadcastRevenue,
+                        `Monthly income from broadcasting rights`,
+                        'balance'
+                    );
+                } catch (error) {
+                    fastify.log.error(`Error registering broadcasting rights for ${club.name}:`, error);
                 }
             }
         }

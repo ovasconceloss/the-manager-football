@@ -1,9 +1,10 @@
 import fastify from "../fastify";
+import ClubModel from "../models/clubModel";
 import { AppError } from "../errors/errors";
 import FinanceModel from "../models/financeModel";
 
 class FinanceService {
-    public static async initializeClubFinance(
+    public static async insertClubFinance(
         clubId: number,
         initialBalance: number,
         transferBudget: number,
@@ -12,6 +13,7 @@ class FinanceService {
         if (initialBalance < 0 || transferBudget < 0 || salaryBudget < 0) {
             throw new AppError("Budgets cannot be negative.", 400);
         }
+
         return FinanceModel.initializeClubFinanceSummary(clubId, initialBalance, transferBudget, salaryBudget);
     }
 
@@ -63,6 +65,25 @@ class FinanceService {
 
     public static async checkIfClubIsBankrupt(clubId: number): Promise<boolean> {
         return FinanceModel.checkBankruptcy(clubId);
+    }
+
+    public static async initializeClubFinances(): Promise<void> {
+        fastify.log.info("Initializing financial summaries for all clubs...");
+
+        const clubs = await ClubModel.getAllClubs();
+
+        for (const club of clubs as { club_id: number; club_name: string; reputation: number }[]) {
+            const salaryBudget = club.reputation * 1500;
+            const initialBalance = club.reputation * 5000;
+            const transferBudget = club.reputation * 2000;
+
+            try {
+                await this.insertClubFinance(club.club_id, initialBalance, transferBudget, salaryBudget);
+            } catch (error) {
+                fastify.log.error(`Error initialising finances for club ${club.club_name} (ID: ${club.club_id}):`, error);
+            }
+        }
+        fastify.log.info("Financial summaries initialized for all clubs successfully.");
     }
 }
 
