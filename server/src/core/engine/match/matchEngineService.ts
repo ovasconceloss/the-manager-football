@@ -25,7 +25,6 @@ const workerLogger = {
     error: (...args: any[]) => console.error('[WORKER ERROR]', ...args)
 };
 
-
 class MatchSimulator {
     private preloadedData: PreloadedEngineData;
     private static readonly HOME_ADVANTAGE = 5;
@@ -235,7 +234,7 @@ class MatchSimulator {
                 away_score: 0,
                 motmPlayerIds: [],
                 playerStats: [],
-                matchLogText: `Partida ${matchInfo.home_name} vs ${matchInfo.away_name} pulada devido a escalações incompletas.`,
+                matchLogText: `Match ${matchInfo.home_name} vs ${matchInfo.away_name} skipped due to incomplete line-ups.`,
                 competition_id: matchInfo.competition_id,
                 season_id: matchInfo.season_id,
                 leg_number: matchInfo.leg_number,
