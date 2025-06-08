@@ -3,19 +3,19 @@ import PlayerModel from "../models/playerModel";
 import GameLoaderService from "../core/gameLoader";
 
 class PlayerService {
-    static async fetchPlayerById(playerId: number) {
+    public static async fetchPlayerById(playerId: number) {
         return PlayerModel.getPlayerById(playerId);
     }
 
-    static async fetchPlayersByName(playerName: string) {
+    public static async fetchPlayersByName(playerName: string) {
         return PlayerModel.getPlayersByName(playerName);
     }
 
-    static async fetchPlayersByClub(clubId: number) {
+    public static async fetchPlayersByClub(clubId: number) {
         return PlayerModel.getPlayersByClub(clubId);
     }
 
-    static async fetchAllPlayerSeasonStats() {
+    public static async fetchAllPlayerSeasonStats() {
         const databaseInstance = GameLoaderService.getCurrentDatabase();
         const currentSeason = await databaseInstance.prepare("SELECT id FROM season WHERE status = 'in_progress' LIMIT 1").get() as { id: number } | undefined;
 
@@ -27,7 +27,7 @@ class PlayerService {
         return await PlayerModel.getAllPlayerSeasonStats(currentSeason.id);
     }
 
-    static async fetchTopScorers(competitionId: number, limit = 10) {
+    public static async fetchTopScorers(competitionId: number, limit = 10) {
         const databaseInstance = GameLoaderService.getCurrentDatabase();
         const currentSeason = databaseInstance.prepare("SELECT id FROM season WHERE status = 'in_progress' LIMIT 1").get() as { id: number } | undefined;
 
@@ -39,7 +39,7 @@ class PlayerService {
         return await PlayerModel.getTopScorers(competitionId, currentSeason.id, limit);
     }
 
-    static async fetchTopAssists(competitionId: number, limit = 10) {
+    public static async fetchTopAssists(competitionId: number, limit = 10) {
         const databaseInstance = GameLoaderService.getCurrentDatabase();
         const currentSeason = databaseInstance.prepare("SELECT id FROM season WHERE status = 'in_progress' LIMIT 1").get() as { id: number } | undefined;
 
@@ -51,7 +51,7 @@ class PlayerService {
         return await PlayerModel.getTopAssists(competitionId, currentSeason.id, limit);
     }
 
-    static async fetchTopRatings(competitionId: number, limit = 10) {
+    public static async fetchTopRatings(competitionId: number, limit = 10) {
         const databaseInstance = GameLoaderService.getCurrentDatabase();
         const currentSeason = databaseInstance.prepare("SELECT id FROM season WHERE status = 'in_progress' LIMIT 1").get() as { id: number } | undefined;
 
