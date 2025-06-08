@@ -112,7 +112,10 @@ class ManagerModel {
             }
 
             const contractStartDate = gameCurrentDate;
-            const contractEndDate = currentSeason.end_date;
+
+            const startYear = new Date(contractStartDate).getFullYear();
+            const contractEndYear = startYear + 2;
+            const contractEndDate = `${contractEndYear}-06-15`;
 
             const sqlInsertStaffContract = `
                 INSERT INTO staff_contract
@@ -185,7 +188,7 @@ class ManagerModel {
             JOIN tactical_style_type tst ON s.tactical_style_id = tst.id
             JOIN nation n ON s.nation_id = n.id
             LEFT JOIN staff_contract sc ON s.id = sc.staff_id
-                AND sc.club_id = ? -- Adicionado para garantir que o contrato é do clube correto
+                AND sc.club_id = ?
                 AND ? BETWEEN sc.start_date AND sc.end_date
             LEFT JOIN club c ON sc.club_id = c.id
             WHERE s.id = ? AND s.is_user = 1 AND sft.name = 'Manager'
