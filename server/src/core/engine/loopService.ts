@@ -4,6 +4,7 @@ import Database from "better-sqlite3";
 import { Worker } from 'worker_threads';
 import MatchServiceUtils from './match/matchServiceUtils';
 import { PreloadedEngineData, SimulatedMatchResult, GameLoopResult, PlayerData, ClubData, MatchDbInfo } from "../../interfaces/engine";
+import FinanceModel from '../../models/financeModel';
 
 class LoopService {
     private static async preloadEngineData(databaseInstance: Database.Database, currentMatchDate: string): Promise<PreloadedEngineData> {
@@ -277,6 +278,19 @@ class LoopService {
         const nextDate = new Date(today);
         nextDate.setDate(nextDate.getDate() + 1);
         const nextDateFormatted = nextDate.toISOString().split("T")[0];
+
+        if (nextDate.getDate() === 1) {
+            fastify.log.info(`Processing monthly payments for ${nextDateFormatted}...`);
+            const clubs = databaseInstance.prepare(`SELECT id FROM club`).all() as { id: number }[];
+
+            for (const club of clubs) {
+                try {
+                    await FinanceModel.processSalaryPayments(club.id, nextDateFormatted);
+                } catch (error) {
+                    fastify.log.error(`Failed to process salaries for club ${club.id}:`, error);
+                }
+            }
+        }
 
         databaseInstance.prepare(`
             UPDATE game_state SET current_date = ? WHERE id = ?

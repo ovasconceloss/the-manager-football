@@ -11,6 +11,7 @@ import playerRoutes from './routes/playerRoutes';
 import leagueRoutes from './routes/leagueRoutes';
 import fixtureRoutes from './routes/fixtureRoutes';
 import managerRoutes from './routes/managerRoutes';
+import financeRoutes from './routes/financeRoutes';
 
 const fastify = Fastify({
     logger: {
@@ -41,6 +42,7 @@ fastify.register(playerRoutes);
 fastify.register(leagueRoutes);
 fastify.register(fixtureRoutes);
 fastify.register(managerRoutes);
+fastify.register(financeRoutes);
 
 fastify.server.setTimeout(600000);
 
