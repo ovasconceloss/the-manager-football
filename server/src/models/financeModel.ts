@@ -173,7 +173,7 @@ class FinanceModel {
 
         if (playerSalaries > 0) {
             const desc = `Monthly salaries for players`;
-            fastify.log.info(`Processing ${desc} of -${playerSalaries} for club ${clubId} on ${paymentDate}.`);
+            //fastify.log.info(`Processing ${desc} of -${playerSalaries} for club ${clubId} on ${paymentDate}.`);
             const id = await FinanceModel.recordTransaction(
                 clubId, 'Player Salaries', -playerSalaries, paymentDate, desc
             );
@@ -182,7 +182,7 @@ class FinanceModel {
 
         if (staffSalaries > 0) {
             const desc = `Monthly salaries for staff`;
-            fastify.log.info(`Processing ${desc} of -${staffSalaries} for club ${clubId} on ${paymentDate}.`);
+            //fastify.log.info(`Processing ${desc} of -${staffSalaries} for club ${clubId} on ${paymentDate}.`);
             const id = await FinanceModel.recordTransaction(
                 clubId, 'Staff Salaries', -staffSalaries, paymentDate, desc
             );
