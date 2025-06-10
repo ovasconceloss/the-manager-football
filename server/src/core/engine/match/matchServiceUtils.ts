@@ -266,8 +266,9 @@ class MatchServiceUtils {
                 s.defenses = s.tackles_won;
                 s.interceptions = Math.round((playerInfo.attributes.get('Vision') || 1) * randomValues(0.2, 1.5));
             } else if (positionCategory === 'goalkeeper') {
-                s.defenses = Math.round((playerInfo.attributes.get('Goalkeeping') || 1) * randomValues(0.5, 3));
-                s.shots_on_target = teamGoals + randomValues(0, 3);
+                const goalsConceded = teamGoals;
+                s.defenses = Math.max(0, goalsConceded + Math.floor(Math.random() * 3));
+                s.shots_on_target = goalsConceded + Math.floor(Math.random() * 3);
             }
 
             const disciplineAttr = playerInfo.attributes.get('Discipline') || 20;
