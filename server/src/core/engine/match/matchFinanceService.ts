@@ -35,7 +35,7 @@ class MatchFinanceService {
                 `Ticket sales for the match vs. ${match.away_name} (Round ${match.leg_number})`,
                 'balance'
             );
-            fastify.log.info(`Ticket revenue from ${match.home_name}: ${ticketRevenue.toFixed(2)}`);
+            //fastify.log.info(`Ticket revenue from ${match.home_name}: ${ticketRevenue.toFixed(2)}`);
         } catch (error) {
             console.log(error);
             fastify.log.error(`Error registering ticket revenue for ${match.home_name}:`, error);
