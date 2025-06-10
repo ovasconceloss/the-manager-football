@@ -18,8 +18,6 @@ class SeasonService {
         const seasonStart = new Date(seasonStartDate + 'T12:00:00Z');
         const summerEndDate = new Date(seasonStart);
 
-        console.log(seasonStartDate);
-
         const summerStart = new Date(seasonStart);
         summerStart.setMonth(summerStart.getMonth() - 1);
         summerStart.setDate(1);
@@ -65,6 +63,15 @@ class SeasonService {
         this.createTransferWindowsForSeasonSync(databaseInstance, seasonId, gameState.current_date, end_date)
 
         return seasonId;
+    }
+
+    public static insertNewSeasonSync(startDate: string, endDate: string): number {
+        const databaseInstance = GameLoaderService.getCurrentDatabase();
+
+        const result = databaseInstance.prepare(`
+            INSERT INTO season (start_date, end_date, status) VALUES (?, ?, 'in_progress');
+        `).run(startDate, endDate);
+        return result.lastInsertRowid as number;
     }
 }
 

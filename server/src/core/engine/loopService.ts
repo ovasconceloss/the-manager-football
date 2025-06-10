@@ -2,15 +2,16 @@ import * as path from 'path';
 import fastify from '../../fastify';
 import Database from "better-sqlite3";
 import { Worker } from 'worker_threads';
+import { AppError } from '../../errors/errors';
+import SeasonEndService from './seasonEndService';
 import FinanceModel from '../../models/financeModel';
+import SeasonService from '../../services/seasonService';
 import MatchServiceUtils from './match/matchServiceUtils';
 import MatchFinanceService from './match/matchFinanceService';
 import { PreloadedEngineData, SimulatedMatchResult, GameLoopResult, PlayerData, ClubData, MatchDbInfo } from "../../interfaces/engine";
 
 class LoopService {
     private static async preloadEngineData(databaseInstance: Database.Database, currentMatchDate: string): Promise<PreloadedEngineData> {
-        fastify.log.info("Preloading engine data into memory...");
-
         const playersRaw = databaseInstance.prepare(`
             SELECT
                 p.id, p.overall, p.position_id, p.first_name, p.last_name,
@@ -68,7 +69,6 @@ class LoopService {
 
         const matchLineups = new Map<number, Map<number, { player_id: number; position_played_id: number; is_starter: number; is_captain: number; }[]>>();
 
-        fastify.log.info(`Preloaded data: ${players.size} players, ${clubs.size} clubs, ${playerAttributes.size} player attribute maps.`);
         return { players, playerContracts, playerAttributes, attributeTypes, playerPositions, clubs, matchLineups };
     }
 
@@ -83,7 +83,32 @@ class LoopService {
         const today = state.current_date;
         const seasonId = state.season_id;
 
-        fastify.log.info(`Current game date: ${today}, Season ID: ${seasonId}`);
+        const currentSeason = await SeasonService.fetchCurrentSeason() as { id: number, start_date: string, end_date: string };
+
+        if (!currentSeason) {
+            throw new AppError("Current season not found. Cannot advance game day.", 500);
+        }
+
+        if (today === currentSeason.end_date) {
+            fastify.log.info(`End of season detected: ${currentSeason.end_date}. Processing season end...`);
+
+            /*
+            const nextSeasonStartDateObj = new Date(currentSeason.end_date + 'T12:00:00Z');
+            nextSeasonStartDateObj.setDate(nextSeasonStartDateObj.getDate() + 1);
+            const nextSeasonStartDate = nextSeasonStartDateObj.toISOString().split('T')[0];
+            */
+
+            await SeasonEndService.processSeasonEnd(databaseInstance, currentSeason.id);
+
+            const newStateAfterSeasonEnd = databaseInstance.prepare("SELECT * FROM game_state LIMIT 1").get() as { id: number, current_date: string; season_id: number };
+            if (!newStateAfterSeasonEnd) {
+                throw new AppError("Game State not found after season end processing.", 500);
+            }
+            return {
+                played: 0,
+                newDate: newStateAfterSeasonEnd.current_date
+            };
+        }
 
         const preloadedData = await this.preloadEngineData(databaseInstance, today);
 
@@ -105,8 +130,7 @@ class LoopService {
         `).all(today, seasonId) as MatchDbInfo[];
 
         if (scheduledMatches.length === 0) {
-            fastify.log.info(`No scheduled matches for today. Advancing date.`);
-            const nextDate = new Date(today);
+            const nextDate = new Date(today + 'T12:00:00Z');
             nextDate.setDate(nextDate.getDate() + 1);
             const nextDateFormatted = nextDate.toISOString().split("T")[0];
 
@@ -119,8 +143,6 @@ class LoopService {
                 newDate: nextDateFormatted
             };
         }
-
-        fastify.log.info(`Found ${scheduledMatches.length} scheduled matches for today. Checking/Generating lineups.`);
 
         const matchesToSimulate: MatchDbInfo[] = [];
         const matchLineupsData: Map<number, Map<number, { player_id: number; position_played_id: number; is_starter: number; is_captain: number; }[]>> = new Map();
@@ -162,13 +184,11 @@ class LoopService {
             }
         }
 
-
         preloadedData.matchLineups = matchLineupsData;
 
         fastify.log.info(`Found ${matchesToSimulate.length} matches with complete lineups to simulate.`);
 
         if (matchesToSimulate.length === 0) {
-            fastify.log.info(`No matches with complete lineups to simulate today. Advancing date.`);
             const nextDate = new Date(today);
             nextDate.setDate(nextDate.getDate() + 1);
             const nextDateFormatted = nextDate.toISOString().split("T")[0];
@@ -182,7 +202,6 @@ class LoopService {
                 newDate: nextDateFormatted
             };
         }
-
 
         const numWorkers = Math.min(matchesToSimulate.length, require('os').cpus().length);
         const matchesPerWorker = Math.ceil(matchesToSimulate.length / numWorkers);
@@ -240,8 +259,6 @@ class LoopService {
             const resultsFromWorkers = await Promise.all(simulationPromises);
             resultsFromWorkers.forEach(chunk => allSimulatedResults.push(...chunk));
 
-            fastify.log.info(`All ${allSimulatedResults.length} matches simulated by workers. Saving results to DB.`);
-
             databaseInstance.transaction(() => {
                 const savePlayerStatsStmt = databaseInstance.prepare(`
                     INSERT INTO player_match_stats (match_id, player_id, club_id, rating, goals, assists, defenses, passes, interceptions, is_motm)
@@ -285,12 +302,11 @@ class LoopService {
             throw error;
         }
 
-        const nextDate = new Date(today);
+        const nextDate = new Date(today + 'T12:00:00Z');
         nextDate.setDate(nextDate.getDate() + 1);
         const nextDateFormatted = nextDate.toISOString().split("T")[0];
 
         if (nextDate.getDate() === 1) {
-            fastify.log.info(`Processing monthly payments for ${nextDateFormatted}...`);
             const clubs = databaseInstance.prepare(`SELECT id, reputation, name FROM club`).all() as { id: number, reputation: number, name: string }[];
 
             for (const club of clubs) {
@@ -345,10 +361,13 @@ class LoopService {
             }
         }
 
-        databaseInstance.prepare(`
+        fastify.log.warn(`Updating game_state: ID = ${state.id}, nextDate = ${nextDateFormatted}`);
+
+        const result = databaseInstance.prepare(`
             UPDATE game_state SET current_date = ? WHERE id = ?
         `).run(nextDateFormatted, state.id);
 
+        fastify.log.info(`Rows updated: ${result.changes}`);
         fastify.log.info(`Game date advanced to: ${nextDateFormatted}. Total matches played today: ${allSimulatedResults.length}`);
 
         return {
@@ -360,8 +379,6 @@ class LoopService {
     private static updateLeagueStandingsForMatch(databaseInstance: Database.Database, simulatedResult: SimulatedMatchResult): void {
         const { competition_id, season_id, leg_number, home_club_id, away_club_id, home_score, away_score } = simulatedResult;
         const currentMatchDay = leg_number;
-
-        fastify.log.info(`Updating league standings for Competition ID: ${competition_id}, Season ID: ${season_id}, Match Day: ${currentMatchDay}`);
 
         const clubsInMatch = [home_club_id, away_club_id];
 
@@ -422,7 +439,6 @@ class LoopService {
                     currentPlayed, currentWins, currentDraws, currentLosses, currentGoalsFor, currentGoalsAgainst,
                     currentGoalDifference, currentPoints
                 );
-                fastify.log.debug(`Club ${clubId} stats updated for match day ${currentMatchDay}.`);
             }
 
             const standingsForCurrentDay = databaseInstance.prepare(`
@@ -442,8 +458,6 @@ class LoopService {
                 updatePositionStmt.run(i + 1, standingEntry.id);
                 fastify.log.debug(`Club ${standingEntry.club_id} is now position ${i + 1} for match day ${currentMatchDay}.`);
             }
-            fastify.log.info(`League positions updated for Match Day: ${currentMatchDay}.`);
-
         })();
     }
 }

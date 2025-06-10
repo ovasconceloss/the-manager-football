@@ -221,7 +221,7 @@ class MatchSimulator {
     }
 
     public simulateMatch(matchInfo: MatchDbInfo): SimulatedMatchResult {
-        workerLogger.info(`Worker simulating match ID: ${matchInfo.id}`);
+        //workerLogger.info(`Worker simulating match ID: ${matchInfo.id}`);
 
         const homePlayers = this.getStartingPlayersFromPreloadedData(matchInfo.id, matchInfo.home_club_id);
         const awayPlayers = this.getStartingPlayersFromPreloadedData(matchInfo.id, matchInfo.away_club_id);
@@ -266,7 +266,7 @@ class MatchSimulator {
 
         const matchLogText = `${matchInfo.home_name} ${homeScore} x ${awayScore} ${matchInfo.away_name}`;
 
-        workerLogger.info(`Worker finished simulating match ID: ${matchInfo.id}. Score: ${homeScore}-${awayScore}`);
+        //workerLogger.info(`Worker finished simulating match ID: ${matchInfo.id}. Score: ${homeScore}-${awayScore}`);
 
         return {
             matchId: matchInfo.id,
