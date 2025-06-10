@@ -199,7 +199,106 @@ class SeasonEndService {
                 fastify.log.info(`No better eligible player found.`);
             }
         } else {
-            fastify.log.warn("Award type 'Ballon d''Or' not found. Please ensure it is seeded with is_competition_specific = 0."); // ALTERADO
+            fastify.log.warn("Award type 'Ballon d''Or' not found. Please ensure it is seeded with is_competition_specific = 0.");
+        }
+
+        const bestGoalkeeperAwardType = databaseInstance.prepare(`SELECT id FROM individual_award_type WHERE name = 'Best Goalkeeper'`).get() as { id: number } | undefined;
+        if (bestGoalkeeperAwardType) {
+            const bestGoalkeeper = databaseInstance.prepare<{ seasonId: number }>(`
+                SELECT
+                    ps.player_id,
+                    p.first_name,
+                    p.last_name,
+                    AVG(ps.rating) AS avg_rating
+                FROM player_match_stats ps
+                JOIN player p ON ps.player_id = p.id
+                JOIN position pos ON ps.position_played_id = pos.id
+                JOIN match m ON ps.match_id = m.id
+                WHERE m.season_id = :seasonId AND pos.name = 'GK'
+                GROUP BY ps.player_id
+                ORDER BY avg_rating DESC
+                LIMIT 1;
+            `).get({ seasonId: currentSeasonId }) as { player_id: number; first_name: string; last_name: string; avg_rating: number } | undefined;
+
+            if (bestGoalkeeper) {
+                databaseInstance.prepare(`
+                    INSERT INTO player_award (player_id, individual_award_type_id, season_id, date_awarded)
+                    VALUES (?, ?, ?, ?)
+                `).run(bestGoalkeeper.player_id, bestGoalkeeperAwardType.id, currentSeasonId, awardDate);
+                fastify.log.info(`Best Goalkeeper awarded to ${bestGoalkeeper.first_name} ${bestGoalkeeper.last_name} (Player ID: ${bestGoalkeeper.player_id}) with avg rating ${bestGoalkeeper.avg_rating.toFixed(2)}.`);
+            } else {
+                fastify.log.warn("No goalkeeper found for Best Goalkeeper award.");
+            }
+        } else {
+            fastify.log.warn("Best Goalkeeper award type not found.");
+        }
+
+        const bestPlayerCompAwardType = databaseInstance.prepare(`SELECT id FROM individual_award_type WHERE name = 'Best Player of Competition'`).get() as { id: number } | undefined;
+        if (bestPlayerCompAwardType) {
+            const competitions = databaseInstance.prepare(`SELECT id, name FROM competition`).all() as { id: number, name: string }[];
+
+            for (const competition of competitions) {
+                const bestPlayerInComp = databaseInstance.prepare<{ competitionId: number, seasonId: number }>(`
+                    SELECT
+                        ps.player_id,
+                        p.first_name,
+                        p.last_name,
+                        AVG(ps.rating) as avg_rating
+                    FROM player_match_stats ps
+                    JOIN player p ON ps.player_id = p.id
+                    JOIN match m ON ps.match_id = m.id
+                    WHERE m.season_id = :seasonId AND m.competition_id = :competitionId
+                    GROUP BY ps.player_id
+                    ORDER BY avg_rating DESC
+                    LIMIT 1;
+                `).get({ competitionId: competition.id, seasonId: currentSeasonId }) as { player_id: number; first_name: string; last_name: string; avg_rating: number } | undefined;
+
+                if (bestPlayerInComp) {
+                    databaseInstance.prepare(`
+                        INSERT INTO player_award (player_id, individual_award_type_id, season_id, date_awarded, competition_id)
+                        VALUES (?, ?, ?, ?, ?)
+                    `).run(bestPlayerInComp.player_id, bestPlayerCompAwardType.id, currentSeasonId, awardDate, competition.id);
+                    fastify.log.info(`Best Player of ${competition.name} awarded to ${bestPlayerInComp.first_name} ${bestPlayerInComp.last_name} (Player ID: ${bestPlayerInComp.player_id}) with avg rating ${bestPlayerInComp.avg_rating.toFixed(2)}.`);
+                } else {
+                    fastify.log.warn(`No player found for Best Player of Competition award in ${competition.name}.`);
+                }
+            }
+        } else {
+            fastify.log.warn("Best Player of Competition award type not found.");
+        }
+
+        const topScorerCompAwardType = databaseInstance.prepare(`SELECT id FROM individual_award_type WHERE name = 'Top Scorer of Competition'`).get() as { id: number } | undefined;
+        if (topScorerCompAwardType) {
+            const competitions = databaseInstance.prepare(`SELECT id, name FROM competition`).all() as { id: number, name: string }[];
+
+            for (const competition of competitions) {
+                const topScorerInComp = databaseInstance.prepare<{ competitionId: number, seasonId: number }>(`
+                    SELECT
+                        ps.player_id,
+                        p.first_name,
+                        p.last_name,
+                        SUM(ps.goals) as total_goals
+                    FROM player_match_stats ps
+                    JOIN player p ON ps.player_id = p.id
+                    JOIN match m ON ps.match_id = m.id
+                    WHERE m.season_id = :seasonId AND m.competition_id = :competitionId
+                    GROUP BY ps.player_id
+                    ORDER BY total_goals DESC
+                    LIMIT 1;
+                `).get({ competitionId: competition.id, seasonId: currentSeasonId }) as { player_id: number; first_name: string; last_name: string; total_goals: number } | undefined;
+
+                if (topScorerInComp) {
+                    databaseInstance.prepare(`
+                        INSERT INTO player_award (player_id, individual_award_type_id, season_id, date_awarded, competition_id)
+                        VALUES (?, ?, ?, ?, ?)
+                    `).run(topScorerInComp.player_id, topScorerCompAwardType.id, currentSeasonId, awardDate, competition.id);
+                    fastify.log.info(`Top Scorer of ${competition.name} awarded to ${topScorerInComp.first_name} ${topScorerInComp.last_name} (Player ID: ${topScorerInComp.player_id}) with ${topScorerInComp.total_goals} goals.`);
+                } else {
+                    fastify.log.warn(`No player found for Top Scorer of Competition award in ${competition.name}.`);
+                }
+            }
+        } else {
+            fastify.log.warn("Top Scorer of Competition award type not found.");
         }
 
         const teamOfTheYearAwardTypeId = databaseInstance.prepare("SELECT id FROM individual_award_type WHERE name = 'Team of the Year'").get() as { id: number } | undefined;
