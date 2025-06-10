@@ -188,15 +188,11 @@ class MatchSimulator {
 
         if (goalkeeperStat) {
             const goalkeeperInfo = players.find(p => p.id === goalkeeperStat.player_id);
+
             if (goalkeeperInfo) {
-
-                const baseSaves = randomValues(3, 7);
-                const overallImpact = (goalkeeperInfo.overall / 100);
-
-                const savesFromConcededGoals = Math.max(0, opponentGoals - randomValues(0, 2));
-
-                goalkeeperStat.defenses = Math.round((baseSaves * overallImpact) + (savesFromConcededGoals * overallImpact));
-                goalkeeperStat.defenses = Math.max(goalkeeperStat.defenses, 0);
+                const goalsConceded = opponentGoals;
+                const extraSaves = Math.floor(Math.random() * 3);
+                goalkeeperStat.defenses = Math.max(0, goalsConceded + extraSaves);
             }
         }
 
