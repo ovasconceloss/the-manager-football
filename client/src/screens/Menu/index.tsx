@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { exit } from '@tauri-apps/plugin-process';
-import { Link, useNavigate } from "react-router-dom";
 import { Settings, DoorOpen, User, ShieldHalf, LogOut } from "lucide-react";
 import {
     AlertDialog,
@@ -14,26 +13,11 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { createSave } from "@/services/api/routes/saveRoutes";
+import { useCreateSave } from "@/hooks/useCreateSave";
 
 const Menu: React.FC = () => {
-    const navigate = useNavigate();
-    const [error, setError] = useState<string | null>(null);
-
     const handleExit = async () => await exit(0);
-
-    const handleCreateNewSave = async () => {
-        try {
-            const result = await createSave();
-
-            if (result.success != true)
-                setError(result.message);
-
-            navigate('/manager/choose-club');
-        } catch (err: unknown) {
-            setError("An unexpected error has occurred. Please try again.");
-        }
-    }
+    const { handleCreateNewSave, error, loading } = useCreateSave();
 
     return (
         <main className="relative h-screen w-screen bg-[url('../assets/images/background_menu.png')] bg-cover bg-center select-none">
@@ -61,7 +45,7 @@ const Menu: React.FC = () => {
                         </Button>
                         <Button onClick={handleCreateNewSave} className="w-full p-5 flex justify-start uppercase text-lg font-semibold cursor-pointer 
               bg-[#1E1E26] text-white border border-[#1E1E26] rounded-md hover:bg-[#67159C]">
-                            Start a New Game
+                            {loading ? "Loading..." : "Start a New Game"}
                         </Button>
                         {error && <div className="text-red-400 mt-2">{error}</div>}
                     </div>
