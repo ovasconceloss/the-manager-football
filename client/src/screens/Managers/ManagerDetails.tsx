@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { Link, useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useManagerCreation } from "@/hooks/useManagerCreate";
 import { ChevronLeft, ChevronRight, Save, Loader2 } from "lucide-react";
@@ -32,12 +32,14 @@ const ManagerDetails: React.FC = () => {
         isLoadingTacticalData,
     } = useManagerCreation();
 
+    const navigate = useNavigate();
     const [currentTab, setCurrentTab] = useState("personal");
 
     const handleSaveAndContinue = async () => {
         const success = await saveManager();
-        if (success) {
-            console.log("Manager created successfully, navigate to dashboard or confirmation.");
+
+        if (success === true) {
+            navigate('/game/portal');
         }
     };
 
