@@ -6,7 +6,7 @@ class ManagerService {
         firstName: string,
         lastName: string,
         birthDate: string,
-        tacticalStyleName: string,
+        tacticalStyleId: number,
         clubId: number
     ): Promise<number> {
         return await ManagerModel.insertAndAssignManager(
@@ -14,7 +14,7 @@ class ManagerService {
             firstName,
             lastName,
             birthDate,
-            tacticalStyleName,
+            tacticalStyleId,
             clubId
         );
     }
