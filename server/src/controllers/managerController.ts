@@ -10,15 +10,15 @@ class ManagerController {
                 firstName: string;
                 lastName: string;
                 birthDate: string;
-                tacticalStyleId: number;
+                tacticalStyleName: string;
                 clubId: number;
             };
         }>,
         reply: FastifyReply
     ) {
-        const { nationId, firstName, lastName, birthDate, tacticalStyleId, clubId } = request.body;
+        const { nationId, firstName, lastName, birthDate, tacticalStyleName, clubId } = request.body;
 
-        if (!nationId || !firstName || !lastName || !birthDate || !tacticalStyleId || !clubId) {
+        if (!nationId || !firstName || !lastName || !birthDate || !tacticalStyleName || !clubId) {
             return reply.status(400).send({ message: "Missing required fields for manager creation." });
         }
 
@@ -28,7 +28,7 @@ class ManagerController {
                 firstName,
                 lastName,
                 birthDate,
-                tacticalStyleId,
+                tacticalStyleName,
                 clubId
             );
             return reply.status(201).send({
