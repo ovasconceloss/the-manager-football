@@ -76,7 +76,7 @@ const ManagerDetails: React.FC = () => {
                     </div>
                     <Card className="bg-[#19181F] border-2 border-[#19181F] text-white p-6 rounded-md">
                         <h3 className="text-xl font-bold mb-4 border-b border-[#2A2A35] pb-2">Manager Summary</h3>
-                        <div className="flex items-center space-x-4 mb-4">
+                        <div className="flex items-end space-x-4 mb-4">
                             {managerData.personalDetails.image ? (
                                 <img
                                     src={managerData.personalDetails.image}
@@ -91,7 +91,14 @@ const ManagerDetails: React.FC = () => {
                             )}
                             <div>
                                 <h4 className="text-lg font-semibold">{managerData.personalDetails.firstName} {managerData.personalDetails.lastName}</h4>
-                                <p className="text-sm text-[#A1A1AA]">
+                                <p className="w-full flex items-center text-sm text-[#A1A1AA]">
+                                    <img
+                                        className={`w-5 h-5 mr-0.5 object-contain ${nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.flag_image ? '' : 'hidden'}`}
+                                        src={`data: image / png; base64, ${nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.flag_image
+                                            ? nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.flag_image : ''
+                                            }`}
+                                        alt=""
+                                    />
                                     {nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.nation_name || 'Nationality unknown'}
                                 </p>
                                 <p className="text-sm text-[#A1A1AA]">
