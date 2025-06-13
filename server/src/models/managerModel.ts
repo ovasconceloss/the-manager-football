@@ -36,7 +36,7 @@ class ManagerModel {
         firstName: string,
         lastName: string,
         birthDate: string,
-        tacticalStyleName: string,
+        tacticalStyleId: number,
         clubId: number
     ): Promise<number> {
         const databaseInstance = GameLoaderService.getCurrentDatabase();
@@ -57,11 +57,11 @@ class ManagerModel {
             }
 
             const tacticalStyle = databaseInstance.prepare(`
-                SELECT id FROM tactical_style_type WHERE name = ?
-            `).get(tacticalStyleName) as { id: number } | undefined;
+                SELECT id FROM tactical_style_type WHERE id = ?
+            `).get(tacticalStyleId) as { id: number } | undefined;
 
             if (!tacticalStyle) {
-                throw new Error(`Tactical style '${tacticalStyleName}' not found in database.`);
+                throw new Error(`Tactical style '${tacticalStyleId}' not found in database.`);
             }
 
             databaseInstance.prepare(`
@@ -70,7 +70,7 @@ class ManagerModel {
                   AND staff_id IN (
                       SELECT s.id
                       FROM staff s
-                      WHERE s.function_id = ? -- Apenas managers
+                      WHERE s.function_id = ?
                   );
             `).run(clubId, managerFunction.id);
 

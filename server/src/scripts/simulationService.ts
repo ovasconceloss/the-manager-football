@@ -72,14 +72,14 @@ async function simulateSeason(): Promise<void> {
                 console.log(`Assigning manager to club: ${selectedClub.club_name} (ID: ${userClubId})`);
 
                 const managerNationId = 1;
-                const tacticalStyleName = 'Attacking';
+                const tacticalStyleId = 1;
                 try {
                     await ManagerModel.insertAndAssignManager(
                         managerNationId,
                         'Simulator',
                         'Manager',
                         '1980-05-15',
-                        tacticalStyleName,
+                        tacticalStyleId,
                         userClubId
                     );
                     console.log("Default manager created and assigned.");
