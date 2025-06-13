@@ -115,7 +115,7 @@ const ManagerDetails: React.FC = () => {
                             </Button>
                         </Link>
                         <Button
-                            className="p-3 bg-[#67159C] text-white cursor-pointer hover:bg-[#52107a]"
+                            className="p-3 w-[9.0rem] bg-[#67159C] text-white cursor-pointer hover:bg-[#52107a]"
                             onClick={handleSaveAndContinue}
                             disabled={isSaving || !validateForm()}
                         >
@@ -124,7 +124,7 @@ const ManagerDetails: React.FC = () => {
                             ) : (
                                 <Save className="mr-2 h-4 w-4" />
                             )}
-                            {isSaving ? "Saving..." : "Create"}
+                            {isSaving ? "Saving" : "Create"}
                             <ChevronRight className="ml-2 h-4 w-4" />
                         </Button>
                     </div>
