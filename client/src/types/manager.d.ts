@@ -29,9 +29,8 @@ export type ManagerAttributes = {
 };
 
 export type TacticalStyle = {
-    formationPreference: string;
-    playingStyle: 'possession' | 'counter_attack' | 'tiki_taka' | 'direct_play' | 'gegenpress';
-    trainingFocus: 'attacking' | 'defensive' | 'technical' | 'physical' | 'balanced';
+    formationPreference: number | undefined;
+    playingStyle: number | undefined;
 };
 
 export type ManagerData = {
