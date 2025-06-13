@@ -228,8 +228,9 @@ export function useManagerCreation() {
         setIsSaving(true);
         try {
             await new Promise(resolve => setTimeout(resolve, 1500));
-            await insertNewManager(managerData, selectedClub);
-            return true;
+            const response = await insertNewManager(managerData, selectedClub);
+
+            return response.success;
         } catch (error) {
             console.error("Error saving manager:", error);
             return false;
