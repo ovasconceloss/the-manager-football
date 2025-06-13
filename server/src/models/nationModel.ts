@@ -73,6 +73,13 @@ class NationModel {
         convertNationImagesToBase64(nation);
         return nation;
     }
+
+    public static async getCitiesByNation(nationId: number) {
+        const databaseInstance = GameLoaderService.getCurrentDatabase();
+        const sql = `SELECT * FROM city WHERE city.nation_id = ?`;
+
+        return databaseInstance.prepare(sql).all(nationId);
+    }
 }
 
 export default NationModel;

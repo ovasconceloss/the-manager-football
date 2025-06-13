@@ -20,7 +20,7 @@ const ChooseClub: React.FC = () => {
     return (
         <main className="relative h-screen w-screen bg-[#19181F] flex items-center justify-center select-none">
             <Card className="w-full max-w-6xl flex flex-col md:flex-row border-0 bg-[#19181F]">
-                <aside className="md:w-[50rem] p-8 flex flex-col gap-6 min-h-[36rem]">
+                <aside className="md:w-[50rem] p-8 flex flex-col gap-6 min-h-[50rem]">
                     <div>
                         <div className="mb-10 flex flex-col justify-start">
                             <h2 className="text-sm text-white uppercase tracking-widest font-semibold">What Club do you want to manage?</h2>
@@ -36,7 +36,7 @@ const ChooseClub: React.FC = () => {
                                                 `w-full flex justify-start items-center px-2 py-8 rounded-md cursor-pointer text-xl font-semibold transition
                                                 ${selectedLeague && selectedLeague.league_id === league.league_id
                                                     ? "bg-[#67159C] text-white"
-                                                    : "bg-[#23263a] text-[#E5E5E5] hover:bg-[#67159C] hover:text-white"}`
+                                                    : "bg-[#19181F] border-2 border-[#2A2A35] text-[#E5E5E5] hover:bg-[#67159C] hover:text-white"}`
                                             }
                                             onClick={() => setSelectedLeague(league)}
                                         >
@@ -74,10 +74,10 @@ const ChooseClub: React.FC = () => {
                             Select a club to continue
                         </h2>
                         <div className="mt-10">
-                            <div className={`w-full p-2 bg-[#23263A] border-b-5 border-b-[#67159C] rounded-md ${!selectedClub ? 'hidden' : ''}`}>
+                            <div className={`w-full p-2 bg-[#19181F] border-x-2 border-t-2 border-b-5 border-b-[#67159C] border-x-[#2A2A35] border-t-[#2A2A35] rounded-md ${!selectedClub ? 'hidden' : ''}`}>
                                 <div className="flex items-start">
                                     <img
-                                        src={`data: image / png; base64, ${selectedClub?.logo_image}`}
+                                        src={`data: image / png; base64, ${selectedClub?.logo_image ? selectedClub?.logo_image : ''}`}
                                         className="w-15 h-15 object-contain rounded"
                                     />
                                     <div className="ml-2 flex flex-col">
@@ -89,7 +89,7 @@ const ChooseClub: React.FC = () => {
                         </div>
                     </div>
                 </aside>
-                <section className="md:w-[80rem] p-10 flex flex-col gap-6 bg-[#2A2A35] rounded-md">
+                <section className="md:w-[80rem] p-10 flex flex-col gap-6 bg-[#19181F] rounded-md">
                     <div>
                         <div className="text-xs text-[#A1A1AA] uppercase tracking-widest mb-1">
                             Choose a Club
@@ -117,7 +117,7 @@ const ChooseClub: React.FC = () => {
                                         `w-full p-4 flex justify-between bg-[#23263a] hover:bg-[#67159C] transition-colors cursor-pointer border-0 rounded-md
                                         ${selectedClub && selectedClub.club_id === club.club_id
                                             ? "bg-[#67159C] text-white"
-                                            : "bg-[#23263a] text-[#E5E5E5] hover:bg-[#67159C] hover:text-white"}
+                                            : "bg-[#19181F] border-2 border-[#2A2A35] text-[#E5E5E5] hover:bg-[#67159C] hover:text-white"}
                                     `}
                                 >
                                     <div className="w-full flex justify-between items-center">
@@ -126,7 +126,7 @@ const ChooseClub: React.FC = () => {
                                             <span className="text-[#A1A1AA] text-xs">Club Reputation: {club.reputation}</span>
                                         </div>
                                         <img
-                                            src={`data: image / png; base64, ${club.logo_image}`}
+                                            src={`data: image / png; base64, ${club.logo_image ? club.logo_image : ''}`}
                                             className="w-8 h-8 object-contain rounded"
                                         />
                                     </div>

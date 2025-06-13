@@ -35,6 +35,25 @@ class NationController {
             return reply.status(500).send({ error: "An unknown error occurred.", message: "Failed to retrieve data from nation by ID." });
         }
     }
+
+    static async getCitiesByNation(request: FastifyRequest<{ Params: { nationId: number } }>, reply: FastifyReply) {
+        const { nationId } = request.params;
+
+        try {
+            const nation = await NationService.fetchCitiesByNation(nationId);
+            if (!nation) {
+                return reply.status(404).send({ message: "Cities not found." });
+            }
+            return reply.status(200).send({ nation });
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                fastify.log.error(`Error fetching cities by nation ID ${nationId}:`, err.message);
+                return reply.status(500).send({ error: err.message, message: "Failed to retrieve cities from nation by ID." });
+            }
+            fastify.log.error(`Unknown error fetching cities by nation ID ${nationId}:`, err);
+            return reply.status(500).send({ error: "An unknown error occurred.", message: "Failed to retrieve cities from nation by ID." });
+        }
+    }
 }
 
 export default NationController;
