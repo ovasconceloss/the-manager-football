@@ -13,6 +13,7 @@ import fixtureRoutes from './routes/fixtureRoutes';
 import managerRoutes from './routes/managerRoutes';
 import financeRoutes from './routes/financeRoutes';
 import transferRoutes from './routes/transferRoutes';
+import tacticalRoutes from './routes/tacticalRoutes';
 
 const fastify = Fastify({
     logger: {
@@ -45,6 +46,7 @@ fastify.register(fixtureRoutes);
 fastify.register(managerRoutes);
 fastify.register(financeRoutes);
 fastify.register(transferRoutes);
+fastify.register(tacticalRoutes);
 
 fastify.server.setTimeout(600000);
 
