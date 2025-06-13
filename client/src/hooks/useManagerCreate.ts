@@ -6,6 +6,7 @@ import { getAllNations } from "@/services/api/routes/nationRoutes";
 import { getCitiesByNation } from "@/services/api/routes/cityRoutes";
 import { ManagerData, ManagerPersonalDetails, ManagerAttributes, TacticalStyle, City } from "@/types/manager";
 import { getAllTacticalFormations, getAllTacticalTypes } from "@/services/api/routes/tacticalRoutes";
+import { insertNewManager } from "@/services/api/routes/managerRoutes";
 
 export function useManagerCreation() {
     const MAX_ATTRIBUTE_POINTS: Record<ManagerPersonalDetails['playingCareer'], number> = {
@@ -226,9 +227,8 @@ export function useManagerCreation() {
         }
         setIsSaving(true);
         try {
-            console.log("Saving manager data:", managerData);
             await new Promise(resolve => setTimeout(resolve, 1500));
-            console.log("Manager saved successfully!");
+            await insertNewManager(managerData, selectedClub);
             return true;
         } catch (error) {
             console.error("Error saving manager:", error);
