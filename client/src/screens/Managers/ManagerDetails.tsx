@@ -27,6 +27,9 @@ const ManagerDetails: React.FC = () => {
         saveManager,
         allowedPoints,
         totalUsedPoints,
+        tacticalTypes,
+        tacticalFormations,
+        isLoadingTacticalData,
     } = useManagerCreation();
 
     const [currentTab, setCurrentTab] = useState("personal");
@@ -37,6 +40,14 @@ const ManagerDetails: React.FC = () => {
             console.log("Manager created successfully, navigate to dashboard or confirmation.");
         }
     };
+
+    const selectedPlayingStyle = tacticalTypes?.find(
+        (type) => type.id === managerData.tacticalStyle.playingStyle
+    );
+
+    const selectedFormation = tacticalFormations?.find(
+        (form) => form.id === managerData.tacticalStyle.formationPreference
+    );
 
     const AttributeSlider: React.FC<{ label: string; value: number; onChange: (value: number[]) => void; max?: number }> = ({ label, value, onChange, max = 20 }) => (
         <div className="space-y-2">
@@ -65,7 +76,7 @@ const ManagerDetails: React.FC = () => {
                     </div>
                     <Card className="bg-[#19181F] border-2 border-[#19181F] text-white p-6 rounded-md">
                         <h3 className="text-xl font-bold mb-4 border-b border-[#2A2A35] pb-2">Manager Summary</h3>
-                        <div className="flex items-center space-x-4 mb-4">
+                        <div className="flex items-end space-x-4 mb-4">
                             {managerData.personalDetails.image ? (
                                 <img
                                     src={managerData.personalDetails.image}
@@ -80,7 +91,14 @@ const ManagerDetails: React.FC = () => {
                             )}
                             <div>
                                 <h4 className="text-lg font-semibold">{managerData.personalDetails.firstName} {managerData.personalDetails.lastName}</h4>
-                                <p className="text-sm text-[#A1A1AA]">
+                                <p className="w-full flex items-center text-sm text-[#A1A1AA]">
+                                    <img
+                                        className={`w-5 h-5 mr-0.5 object-contain ${nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.flag_image ? '' : 'hidden'}`}
+                                        src={`data: image / png; base64, ${nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.flag_image
+                                            ? nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.flag_image : ''
+                                            }`}
+                                        alt=""
+                                    />
                                     {nations.find(n => n.nation_id === managerData.personalDetails.nationalityId)?.nation_name || 'Nationality unknown'}
                                 </p>
                                 <p className="text-sm text-[#A1A1AA]">
@@ -89,9 +107,9 @@ const ManagerDetails: React.FC = () => {
                             </div>
                         </div>
                         <div className="space-y-2 text-sm">
-                            <p><span className="font-semibold text-[#A1A1AA]">Playing Career:</span> <span className="capitalize">{managerData.personalDetails.playingCareer.replace('-', ' ')}</span></p>
-                            <p><span className="font-semibold text-[#A1A1AA]">Playing Style:</span> <span className="capitalize">{managerData.tacticalStyle.playingStyle.replace('_', ' ')}</span></p>
-                            <p><span className="font-semibold text-[#A1A1AA]">Preferred Formation:</span> {managerData.tacticalStyle.formationPreference || 'Not set'}</p>
+                            <p><span className="font-semibold text-[#A1A1AA]">Experience:</span> <span className="capitalize">{managerData.personalDetails.playingCareer.replace('-', ' ')}</span></p>
+                            <p><span className="font-semibold text-[#A1A1AA]">Preferred Formation:</span> {selectedFormation?.name || 'Not set'}</p>
+                            <p><span className="font-semibold text-[#A1A1AA]">Playing Style:</span> {selectedPlayingStyle?.name || 'Not set'}</p>
                         </div>
                         <div className="border-t border-[#2A2A35] pt-2">
                             <div className={`w-full mt-2 ${!selectedClub ? 'hidden' : ''}`}>
@@ -330,62 +348,60 @@ const ManagerDetails: React.FC = () => {
                             </ScrollArea>
                         </TabsContent>
                         <TabsContent value="tactical" className="mt-6 space-y-4">
+                            <h3 className="text-xl font-semibold text-white mb-4">Tactical Preferences</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="formation" className="text-white">Preferred Formation</Label>
                                     <Select
-                                        value={managerData.tacticalStyle.formationPreference}
-                                        onValueChange={(value: typeof managerData.tacticalStyle.formationPreference) => updateTacticalStyle({ formationPreference: value })}
+                                        value={managerData.tacticalStyle.formationPreference?.toString() || ''}
+                                        onValueChange={(value) => updateTacticalStyle({ formationPreference: Number(value) })}
+                                        disabled={isLoadingTacticalData}
                                     >
                                         <SelectTrigger className="w-full bg-[#19181F] text-white border-[#2A2A35]">
-                                            <SelectValue placeholder="Select formation" />
+                                            <SelectValue placeholder={isLoadingTacticalData ? "Loading formations..." : "Select formation"} />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#19181F] text-white border-[#2A2A35]">
-                                            <SelectItem value="4-3-3">4-3-3</SelectItem>
-                                            <SelectItem value="4-2-2">4-2-2</SelectItem>
-                                            <SelectItem value="5-2-3">5-2-3</SelectItem>
-                                            <SelectItem value="4-2-3-1">4-2-3-1</SelectItem>
-                                            <SelectItem value="4-3-2-1">4-3-2-1</SelectItem>
+                                            {tacticalFormations && tacticalFormations.length > 0 ? (
+                                                tacticalFormations?.map((formation) => (
+                                                    <SelectItem key={formation.id} value={formation.id.toString()}>
+                                                        {formation.name}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="no-formations" disabled>No formations available</SelectItem>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="playingStyle" className="text-white">Tactical Style</Label>
+                                    <Label htmlFor="playingStyle" className="text-white">Playing Style</Label>
                                     <Select
-                                        value={managerData.tacticalStyle.playingStyle}
-                                        onValueChange={(value: typeof managerData.tacticalStyle.playingStyle) => updateTacticalStyle({ playingStyle: value })}
+                                        value={managerData.tacticalStyle.playingStyle?.toString() || ''}
+                                        onValueChange={(value) => updateTacticalStyle({ playingStyle: Number(value) })}
+                                        disabled={isLoadingTacticalData}
                                     >
                                         <SelectTrigger className="w-full bg-[#19181F] text-white border-[#2A2A35]">
-                                            <SelectValue placeholder="Select playing style" />
+                                            <SelectValue placeholder={isLoadingTacticalData ? "Loading styles..." : "Select playing style"} />
                                         </SelectTrigger>
                                         <SelectContent className="bg-[#19181F] text-white border-[#2A2A35]">
-                                            <SelectItem value="possession">Possession</SelectItem>
-                                            <SelectItem value="counter_attack">Counter Attack</SelectItem>
-                                            <SelectItem value="tiki_taka">Tiki-Taka</SelectItem>
-                                            <SelectItem value="direct_play">Direct Play</SelectItem>
-                                            <SelectItem value="gegenpress">Gegenpress</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2 col-span-full">
-                                    <Label htmlFor="trainingFocus" className="text-white">Training Focus</Label>
-                                    <Select
-                                        value={managerData.tacticalStyle.trainingFocus}
-                                        onValueChange={(value: typeof managerData.tacticalStyle.trainingFocus) => updateTacticalStyle({ trainingFocus: value })}
-                                    >
-                                        <SelectTrigger className="w-full bg-[#19181F] text-white border-[#2A2A35]">
-                                            <SelectValue placeholder="Select training focus" />
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-[#19181F] text-white border-[#2A2A35]">
-                                            <SelectItem value="attacking">Attacking</SelectItem>
-                                            <SelectItem value="defensive">Defensive</SelectItem>
-                                            <SelectItem value="technical">Technical</SelectItem>
-                                            <SelectItem value="physical">Physical</SelectItem>
-                                            <SelectItem value="balanced">Balanced</SelectItem>
+                                            {tacticalTypes && tacticalTypes.length > 0 ? (
+                                                tacticalTypes?.map((type) => (
+                                                    <SelectItem key={type.id} value={type.id.toString()}>
+                                                        {type.name}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="no-styles" disabled>No styles available</SelectItem>
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>
                             </div>
+                            {selectedPlayingStyle && (
+                                <div className="p-2 rounded-md w-full border-1 border-[#2A2A35]">
+                                    <h2 className="w-full text-center text-xl text-[#A1A1AA]">{selectedPlayingStyle.description}</h2>
+                                </div>
+                            )}
                         </TabsContent>
                     </Tabs>
                 </section>

@@ -1,9 +1,11 @@
 import { Club } from "@/types/club";
 import { Nation } from "@/types/nation";
+import { TacticalFormation, TacticalType } from "@/types/tactical";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getAllNations } from "@/services/api/routes/nationRoutes";
 import { getCitiesByNation } from "@/services/api/routes/cityRoutes";
 import { ManagerData, ManagerPersonalDetails, ManagerAttributes, TacticalStyle, City } from "@/types/manager";
+import { getAllTacticalFormations, getAllTacticalTypes } from "@/services/api/routes/tacticalRoutes";
 
 export function useManagerCreation() {
     const MAX_ATTRIBUTE_POINTS: Record<ManagerPersonalDetails['playingCareer'], number> = {
@@ -37,9 +39,8 @@ export function useManagerCreation() {
             }
         },
         tacticalStyle: {
-            formationPreference: '',
-            playingStyle: 'possession',
-            trainingFocus: 'balanced',
+            formationPreference: 1,
+            playingStyle: 1,
         },
     });
 
@@ -48,6 +49,9 @@ export function useManagerCreation() {
     const [nations, setNations] = useState<Nation[]>([]);
     const [isLoadingCities, setIsLoadingCities] = useState(false);
     const [isLoadingNations, setIsLoadingNations] = useState(true);
+    const [tacticalTypes, setTacticalTypes] = useState<TacticalType[]>();
+    const [isLoadingTacticalData, setIsLoadingTacticalData] = useState(true);
+    const [tacticalFormations, setTacticalFormations] = useState<TacticalFormation[]>();
 
     const allowedPoints = useMemo(() => {
         return MAX_ATTRIBUTE_POINTS[managerData.personalDetails.playingCareer];
@@ -172,6 +176,40 @@ export function useManagerCreation() {
         }));
     }, []);
 
+    useEffect(() => {
+        const fetchTacticalData = async () => {
+            setIsLoadingTacticalData(true);
+            try {
+                const typesResponse = await getAllTacticalTypes();
+                if (typesResponse.success && typesResponse.response) {
+                    setTacticalTypes(typesResponse.response);
+
+                    if (typesResponse.response.length > 0 && !managerData.tacticalStyle.playingStyle) {
+                        updateTacticalStyle({ playingStyle: typesResponse.response[0].id });
+                    }
+                } else {
+                    console.error("Failed to fetch tactical types:", typesResponse.error);
+                }
+
+                const formationsResponse = await getAllTacticalFormations();
+                if (formationsResponse.success && formationsResponse.response) {
+                    setTacticalFormations(formationsResponse.response);
+
+                    if (formationsResponse.response.length > 0 && !managerData.tacticalStyle.formationPreference) {
+                        updateTacticalStyle({ formationPreference: formationsResponse.response[0].id });
+                    }
+                } else {
+                    console.error("Failed to fetch tactical formations:", formationsResponse.error);
+                }
+            } catch (error) {
+                console.error("Error fetching tactical data:", error);
+            } finally {
+                setIsLoadingTacticalData(false);
+            }
+        };
+        fetchTacticalData();
+    }, [managerData.tacticalStyle.playingStyle, managerData.tacticalStyle.formationPreference, updateTacticalStyle]);
+
     const validateForm = useCallback(() => {
         const { personalDetails } = managerData;
         if (!personalDetails.firstName || !personalDetails.lastName || !personalDetails.dateOfBirth || !personalDetails.nationalityId) {
@@ -215,5 +253,8 @@ export function useManagerCreation() {
         saveManager,
         allowedPoints,
         totalUsedPoints,
+        tacticalTypes,
+        tacticalFormations,
+        isLoadingTacticalData,
     };
 }

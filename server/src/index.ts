@@ -5,7 +5,7 @@ const serverStart = async () => {
     const PORT = Number(process.env.SERVER_PORT) || 3000;
 
     try {
-        await fastify.listen({ port: PORT });
+        await fastify.listen({ port: 8080 });
     } catch (err: unknown) {
         if (err instanceof AppError) {
             fastify.log.error(`Failed to start the fastify server: ${err.message}`);
