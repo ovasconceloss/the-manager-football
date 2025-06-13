@@ -2,7 +2,33 @@ import { Buffer } from "buffer";
 import fastify from "../fastify";
 import GameLoaderService from "../core/gameLoader";
 
-function convertLeagueLogoToBase64(obj: any): void {
+function convertImagesToBase64(obj: any): void {
+    if (!obj) return;
+
+    if (obj.nation_flag instanceof Buffer) {
+        try {
+            obj.nation_flag = obj.nation_flag.toString("base64");
+        } catch (e) {
+            fastify.log.error("Error converting nation_flag to base64:", e);
+            obj.nation_flag = null;
+        }
+    } else if (typeof obj.nation_flag === 'string' && obj.nation_flag.startsWith('data:image')) {
+    } else if (obj.nation_flag !== null && obj.nation_flag !== undefined) {
+        fastify.log.warn("Unexpected type for nation_flag, not a Buffer or already base64:", typeof obj.nation_flag);
+    }
+
+    if (obj.federation_image instanceof Buffer) {
+        try {
+            obj.federation_image = obj.federation_image.toString("base64");
+        } catch (e) {
+            fastify.log.error("Error converting federation_image to base64:", e);
+            obj.federation_image = null;
+        }
+    } else if (typeof obj.federation_image === 'string' && obj.federation_image.startsWith('data:image')) {
+    } else if (obj.federation_image !== null && obj.federation_image !== undefined) {
+        fastify.log.warn("Unexpected type for federation_image, not a Buffer or already base64:", typeof obj.federation_image);
+    }
+
     if (obj && obj.league_logo_image instanceof Buffer) {
         try {
             obj.league_logo_image = obj.league_logo_image.toString("base64");
@@ -14,9 +40,7 @@ function convertLeagueLogoToBase64(obj: any): void {
     } else if (obj && obj.league_logo_image !== null && obj.league_logo_image !== undefined) {
         fastify.log.warn("Unexpected type for league_logo_image, not a Buffer or already base64:", typeof obj.league_logo_image);
     }
-}
 
-function convertClubLogoToBase64(obj: any): void {
     if (obj && obj.club_logo_image instanceof Buffer) {
         try {
             obj.club_logo_image = obj.club_logo_image.toString("base64");
@@ -41,6 +65,7 @@ class LeagueModel {
                 comp.reputation,
                 comp.nation_id,
                 n.name AS nation_name,
+                n.flag_image AS nation_flag,
                 comp.competition_logo AS league_logo_image
             FROM competition comp
             LEFT JOIN nation n ON n.id = comp.nation_id
@@ -48,7 +73,7 @@ class LeagueModel {
         `;
 
         const results = databaseInstance.prepare(sql).all();
-        results.forEach(convertLeagueLogoToBase64);
+        results.forEach(convertImagesToBase64);
         return results;
     }
 
@@ -69,7 +94,7 @@ class LeagueModel {
         `;
 
         const result = databaseInstance.prepare(sql).get(leagueId);
-        convertLeagueLogoToBase64(result);
+        convertImagesToBase64(result);
         return result;
     }
 
@@ -108,7 +133,7 @@ class LeagueModel {
         `;
 
         const results = databaseInstance.prepare(sql).all(competitionId, seasonId, competitionId, seasonId);
-        results.forEach(convertClubLogoToBase64);
+        results.forEach(convertImagesToBase64);
 
         return results;
     }
