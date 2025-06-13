@@ -1,11 +1,18 @@
 import { Club } from "@/types/club";
 import { Nation } from "@/types/nation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getAllNations } from "@/services/api/routes/nationRoutes";
 import { getCitiesByNation } from "@/services/api/routes/cityRoutes";
 import { ManagerData, ManagerPersonalDetails, ManagerAttributes, TacticalStyle, City } from "@/types/manager";
 
 export function useManagerCreation() {
+    const MAX_ATTRIBUTE_POINTS: Record<ManagerPersonalDetails['playingCareer'], number> = {
+        none: 60,
+        amateur: 80,
+        'semi-pro': 100,
+        pro: 120,
+    };
+
     const [selectedClub, setSelectedClub] = useState<Club | undefined>();
     const [managerData, setManagerData] = useState<ManagerData>({
         personalDetails: {
@@ -20,13 +27,13 @@ export function useManagerCreation() {
         },
         attributes: {
             coaching: {
-                attack: 5, defence: 5, fitness: 5, goalkeeping: 5, tactical: 5, technical: 5, mental: 5,
+                attacking: 5, defending: 5, fitness: 5, goalkeeping: 5, tactical: 5,
+            },
+            scouting: {
+                judgingAbility: 5, judgingPotential: 5,
             },
             mental: {
-                adaptability: 5, determination: 5, peopleManagement: 5, motivating: 5, scouting: 5, negotiation: 5, judgement: 5,
-            },
-            knowledge: {
-                youthDevelopment: 5, manManagement: 5, financial: 5, medical: 5, transferMarket: 5,
+                negotiation: 5, manManagement: 5, discipline: 5,
             }
         },
         tacticalStyle: {
@@ -41,6 +48,27 @@ export function useManagerCreation() {
     const [nations, setNations] = useState<Nation[]>([]);
     const [isLoadingCities, setIsLoadingCities] = useState(false);
     const [isLoadingNations, setIsLoadingNations] = useState(true);
+
+    const allowedPoints = useMemo(() => {
+        return MAX_ATTRIBUTE_POINTS[managerData.personalDetails.playingCareer];
+    }, [managerData.personalDetails.playingCareer]);
+
+    const totalUsedPoints = useMemo(() => {
+        const { coaching, scouting, mental } = managerData.attributes;
+        let total = 0;
+
+        total += coaching.attacking;
+        total += coaching.defending;
+        total += coaching.fitness;
+        total += coaching.goalkeeping;
+        total += coaching.tactical;
+        total += scouting.judgingAbility;
+        total += scouting.judgingPotential;
+        total += mental.negotiation;
+        total += mental.manManagement;
+        total += mental.discipline;
+        return total;
+    }, [managerData.attributes]);
 
     useEffect(() => {
         const managerClub = localStorage.getItem("manager_club");
@@ -101,14 +129,40 @@ export function useManagerCreation() {
         }));
     }, []);
 
-    const updateAttributes = useCallback((category: keyof ManagerAttributes, attrs: Partial<ManagerAttributes[typeof category]>) => {
-        setManagerData(prev => ({
-            ...prev,
-            attributes: {
-                ...prev.attributes,
-                [category]: { ...prev.attributes[category], ...attrs }
+    const updateAttributes = useCallback(<K extends keyof ManagerAttributes>(category: K, attrs: Partial<ManagerAttributes[K]>) => {
+        setManagerData(prev => {
+            const changedAttrKey = Object.keys(attrs)[0] as keyof Partial<ManagerAttributes[K]>;
+            const proposedValue = attrs[changedAttrKey] as number;
+
+            let currentTotalWithoutChange = 0;
+            Object.values(prev.attributes.coaching).forEach(val => currentTotalWithoutChange += val);
+            Object.values(prev.attributes.scouting).forEach(val => currentTotalWithoutChange += val);
+            Object.values(prev.attributes.mental).forEach(val => currentTotalWithoutChange += val);
+
+            const oldValue = prev.attributes[category][changedAttrKey] as number;
+            currentTotalWithoutChange -= oldValue;
+
+            const potentialNewTotal = currentTotalWithoutChange + proposedValue;
+
+            const currentAllowedPoints = MAX_ATTRIBUTE_POINTS[prev.personalDetails.playingCareer];
+
+            let finalValueForChangedAttr = proposedValue;
+
+            if (potentialNewTotal > currentAllowedPoints) {
+                const excess = potentialNewTotal - currentAllowedPoints;
+                finalValueForChangedAttr = Math.max(1, proposedValue - excess);
             }
-        }));
+            return {
+                ...prev,
+                attributes: {
+                    ...prev.attributes,
+                    [category]: {
+                        ...prev.attributes[category],
+                        [changedAttrKey]: finalValueForChangedAttr,
+                    },
+                },
+            };
+        });
     }, []);
 
     const updateTacticalStyle = useCallback((style: Partial<TacticalStyle>) => {
@@ -159,5 +213,7 @@ export function useManagerCreation() {
         updateTacticalStyle,
         validateForm,
         saveManager,
+        allowedPoints,
+        totalUsedPoints,
     };
 }
