@@ -56,7 +56,7 @@ class ClubModel {
                 c.abbreviation,
                 c.reputation,
                 c.foundation_year,
-                c.logo_image, -- Logo do clube
+                c.logo_image,
                 n.id AS nation_id,
                 n.name AS nation_name,
                 city.id AS city_id,
@@ -65,15 +65,14 @@ class ClubModel {
                 s.name AS stadium_name,
                 s.capacity AS stadium_capacity
             FROM club c
-            JOIN match m ON c.id = m.home_club_id OR c.id = m.away_club_id
-            LEFT JOIN nation n ON c.nation_id = n.id
+            JOIN nation n ON c.nation_id = n.id
+            JOIN competition comp ON (comp.nation_id = n.id AND comp.id = ?) OR (comp.confederation_id = n.confederation_id AND comp.id = ?)
             LEFT JOIN city ON c.city_id = city.id
             LEFT JOIN stadium s ON c.stadium_id = s.id
-            WHERE m.competition_id = ?
             ORDER BY c.name;
         `;
 
-        const results = databaseInstance.prepare(sql).all(competitionId);
+        const results = databaseInstance.prepare(sql).all(competitionId, competitionId);
         results.forEach(convertClubLogoToBase64);
         return results;
     }
