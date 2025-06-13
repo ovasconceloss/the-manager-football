@@ -9,7 +9,7 @@ export const insertNewManager = async (managerData: ManagerData, selectedClub: C
             first_name: managerData.personalDetails.firstName,
             last_name: managerData.personalDetails.lastName,
             birth_date: managerData.personalDetails.dateOfBirth,
-            tacticalStyleName: managerData.tacticalStyle.playingStyle,
+            tacticalStyleId: managerData.tacticalStyle.playingStyle,
             club_id: selectedClub?.club_id
         });
 
