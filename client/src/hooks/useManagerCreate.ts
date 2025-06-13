@@ -4,9 +4,10 @@ import { TacticalFormation, TacticalType } from "@/types/tactical";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getAllNations } from "@/services/api/routes/nationRoutes";
 import { getCitiesByNation } from "@/services/api/routes/cityRoutes";
+import { insertNewSeason } from "@/services/api/routes/seasonRoutes";
+import { insertNewManager } from "@/services/api/routes/managerRoutes";
 import { ManagerData, ManagerPersonalDetails, ManagerAttributes, TacticalStyle, City } from "@/types/manager";
 import { getAllTacticalFormations, getAllTacticalTypes } from "@/services/api/routes/tacticalRoutes";
-import { insertNewManager } from "@/services/api/routes/managerRoutes";
 
 export function useManagerCreation() {
     const MAX_ATTRIBUTE_POINTS: Record<ManagerPersonalDetails['playingCareer'], number> = {
@@ -227,6 +228,7 @@ export function useManagerCreation() {
         }
         setIsSaving(true);
         try {
+            await insertNewSeason();
             await new Promise(resolve => setTimeout(resolve, 1500));
             const response = await insertNewManager(managerData, selectedClub);
 
