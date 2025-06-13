@@ -25,6 +25,8 @@ const ManagerDetails: React.FC = () => {
         updateTacticalStyle,
         validateForm,
         saveManager,
+        allowedPoints,
+        totalUsedPoints,
     } = useManagerCreation();
 
     const [currentTab, setCurrentTab] = useState("personal");
@@ -44,6 +46,7 @@ const ManagerDetails: React.FC = () => {
             </Label>
             <Slider
                 defaultValue={[value]}
+                min={1}
                 max={max}
                 step={1}
                 onValueChange={onChange}
@@ -174,6 +177,7 @@ const ManagerDetails: React.FC = () => {
                                     <Input
                                         id="dob"
                                         type="date"
+                                        max={new Date("1990-01-01").toISOString().split("T")[0]}
                                         value={managerData.personalDetails.dateOfBirth}
                                         onChange={(e) => updatePersonalDetails({ dateOfBirth: e.target.value })}
                                         className="bg-[#19181F] text-white border-[#2A2A35]"
@@ -183,7 +187,7 @@ const ManagerDetails: React.FC = () => {
                                     <Label htmlFor="gender" className="text-white">Gender</Label>
                                     <Select
                                         value={managerData.personalDetails.gender}
-                                        onValueChange={(value: "male" | "female" | "other") => updatePersonalDetails({ gender: value })}
+                                        onValueChange={(value: "male" | "female") => updatePersonalDetails({ gender: value })}
                                     >
                                         <SelectTrigger className="w-full bg-[#19181F] text-white border-[#2A2A35]">
                                             <SelectValue placeholder="Select gender" />
@@ -191,7 +195,6 @@ const ManagerDetails: React.FC = () => {
                                         <SelectContent className="bg-[#19181F] text-white border-[#2A2A35]">
                                             <SelectItem value="male">Male</SelectItem>
                                             <SelectItem value="female">Female</SelectItem>
-                                            <SelectItem value="other">Other</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -254,45 +257,26 @@ const ManagerDetails: React.FC = () => {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                {/*
-                                <div className="space-y-2 col-span-2">
-                                    <Label htmlFor="managerImage" className="text-white">Manager Image (Base64)</Label>
-                                    <Input
-                                        id="managerImage"
-                                        type="file"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    updatePersonalDetails({ image: reader.result as string });
-                                                };
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                        className="bg-[#19181F] text-white border-[#2A2A35] file:text-white file:bg-[#67159C] file:hover:bg-[#52107a]"
-                                    />
-                                    {managerData.personalDetails.image && (
-                                        <img src={managerData.personalDetails.image} alt="Preview" className="mt-2 w-24 h-24 object-cover rounded-md" />
-                                    )}
-                                </div>
-                                */}
                             </div>
                         </TabsContent>
                         <TabsContent value="attributes" className="mt-6 space-y-6">
-                            <ScrollArea className="h-[28rem] pr-4 custom-scrollbar">
+                            <p className="text-sm text-[#A1A1AA] mb-4">
+                                Points Used: <span className="font-bold text-[#67159C]">{totalUsedPoints}</span> / {allowedPoints}
+                                {" "} (<span className="font-bold text-white">Remaining: {allowedPoints - totalUsedPoints}</span>)
+                            </p>
+                            <ScrollArea className="h-[30rem] pr-4 custom-scrollbar">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                     <div className="space-y-4">
-                                        <h4 className="text-lg font-medium text-white border-b border-[#2A2A35] pb-2">Coaching</h4>
+                                        <h4 className="text-lg font-medium text-white border-b border-[#3b3e4e] pb-2">Coaching</h4>
                                         <AttributeSlider
                                             label="Attacking"
-                                            value={managerData.attributes.coaching.attack}
-                                            onChange={(val) => updateAttributes('coaching', { attack: val[0] })}
+                                            value={managerData.attributes.coaching.attacking}
+                                            onChange={(val) => updateAttributes('coaching', { attacking: val[0] })}
                                         />
                                         <AttributeSlider
                                             label="Defending"
-                                            value={managerData.attributes.coaching.defence}
-                                            onChange={(val) => updateAttributes('coaching', { defence: val[0] })}
+                                            value={managerData.attributes.coaching.defending}
+                                            onChange={(val) => updateAttributes('coaching', { defending: val[0] })}
                                         />
                                         <AttributeSlider
                                             label="Fitness"
@@ -309,84 +293,37 @@ const ManagerDetails: React.FC = () => {
                                             value={managerData.attributes.coaching.tactical}
                                             onChange={(val) => updateAttributes('coaching', { tactical: val[0] })}
                                         />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <h4 className="text-lg font-medium text-white border-b border-[#3b3e4e] pb-2">Scouting</h4>
                                         <AttributeSlider
-                                            label="Technical"
-                                            value={managerData.attributes.coaching.technical}
-                                            onChange={(val) => updateAttributes('coaching', { technical: val[0] })}
+                                            label="Judging Ability"
+                                            value={managerData.attributes.scouting.judgingAbility}
+                                            onChange={(val) => updateAttributes('scouting', { judgingAbility: val[0] })}
                                         />
                                         <AttributeSlider
-                                            label="Mental"
-                                            value={managerData.attributes.coaching.mental}
-                                            onChange={(val) => updateAttributes('coaching', { mental: val[0] })}
+                                            label="Judging Potential"
+                                            value={managerData.attributes.scouting.judgingPotential}
+                                            onChange={(val) => updateAttributes('scouting', { judgingPotential: val[0] })}
                                         />
                                     </div>
                                     <div className="space-y-4">
-                                        <h4 className="text-lg font-medium text-white border-b border-[#2A2A35] pb-2">Mental</h4>
-                                        <AttributeSlider
-                                            label="Adaptability"
-                                            value={managerData.attributes.mental.adaptability}
-                                            onChange={(val) => updateAttributes('mental', { adaptability: val[0] })}
-                                        />
-                                        <AttributeSlider
-                                            label="Determination"
-                                            value={managerData.attributes.mental.determination}
-                                            onChange={(val) => updateAttributes('mental', { determination: val[0] })}
-                                        />
-                                        <AttributeSlider
-                                            label="People Management"
-                                            value={managerData.attributes.mental.peopleManagement}
-                                            onChange={(val) => updateAttributes('mental', { peopleManagement: val[0] })}
-                                        />
-                                        <AttributeSlider
-                                            label="Motivating"
-                                            value={managerData.attributes.mental.motivating}
-                                            onChange={(val) => updateAttributes('mental', { motivating: val[0] })}
-                                        />
-                                        <AttributeSlider
-                                            label="Scouting"
-                                            value={managerData.attributes.mental.scouting}
-                                            onChange={(val) => updateAttributes('mental', { scouting: val[0] })}
-                                        />
+                                        <h4 className="text-lg font-medium text-white border-b border-[#3b3e4e] pb-2">Mental</h4>
                                         <AttributeSlider
                                             label="Negotiation"
                                             value={managerData.attributes.mental.negotiation}
                                             onChange={(val) => updateAttributes('mental', { negotiation: val[0] })}
                                         />
                                         <AttributeSlider
-                                            label="Judgement"
-                                            value={managerData.attributes.mental.judgement}
-                                            onChange={(val) => updateAttributes('mental', { judgement: val[0] })}
+                                            label="Man Management"
+                                            value={managerData.attributes.mental.manManagement}
+                                            onChange={(val) => updateAttributes('mental', { manManagement: val[0] })}
                                         />
-                                    </div>
-                                    <div className="space-y-4 col-span-full">
-                                        <h4 className="text-lg font-medium text-white border-b border-[#2A2A35] pb-2">Knowledge</h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                            <AttributeSlider
-                                                label="Youth Development"
-                                                value={managerData.attributes.knowledge.youthDevelopment}
-                                                onChange={(val) => updateAttributes('knowledge', { youthDevelopment: val[0] })}
-                                            />
-                                            <AttributeSlider
-                                                label="Man Management"
-                                                value={managerData.attributes.knowledge.manManagement}
-                                                onChange={(val) => updateAttributes('knowledge', { manManagement: val[0] })}
-                                            />
-                                            <AttributeSlider
-                                                label="Financial"
-                                                value={managerData.attributes.knowledge.financial}
-                                                onChange={(val) => updateAttributes('knowledge', { financial: val[0] })}
-                                            />
-                                            <AttributeSlider
-                                                label="Medical"
-                                                value={managerData.attributes.knowledge.medical}
-                                                onChange={(val) => updateAttributes('knowledge', { medical: val[0] })}
-                                            />
-                                            <AttributeSlider
-                                                label="Transfer Market"
-                                                value={managerData.attributes.knowledge.transferMarket}
-                                                onChange={(val) => updateAttributes('knowledge', { transferMarket: val[0] })}
-                                            />
-                                        </div>
+                                        <AttributeSlider
+                                            label="Discipline"
+                                            value={managerData.attributes.mental.discipline}
+                                            onChange={(val) => updateAttributes('mental', { discipline: val[0] })}
+                                        />
                                     </div>
                                 </div>
                                 <ScrollArea className="h-0 w-0" />
@@ -396,16 +333,24 @@ const ManagerDetails: React.FC = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="formation" className="text-white">Preferred Formation</Label>
-                                    <Input
-                                        id="formation"
+                                    <Select
                                         value={managerData.tacticalStyle.formationPreference}
-                                        onChange={(e) => updateTacticalStyle({ formationPreference: e.target.value })}
-                                        className="bg-[#19181F] text-white border-[#2A2A35]"
-                                        placeholder="e.g., 4-3-3, 4-2-3-1"
-                                    />
+                                        onValueChange={(value: typeof managerData.tacticalStyle.formationPreference) => updateTacticalStyle({ formationPreference: value })}
+                                    >
+                                        <SelectTrigger className="w-full bg-[#19181F] text-white border-[#2A2A35]">
+                                            <SelectValue placeholder="Select formation" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#19181F] text-white border-[#2A2A35]">
+                                            <SelectItem value="4-3-3">4-3-3</SelectItem>
+                                            <SelectItem value="4-2-2">4-2-2</SelectItem>
+                                            <SelectItem value="5-2-3">5-2-3</SelectItem>
+                                            <SelectItem value="4-2-3-1">4-2-3-1</SelectItem>
+                                            <SelectItem value="4-3-2-1">4-3-2-1</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="playingStyle" className="text-white">Playing Style</Label>
+                                    <Label htmlFor="playingStyle" className="text-white">Tactical Style</Label>
                                     <Select
                                         value={managerData.tacticalStyle.playingStyle}
                                         onValueChange={(value: typeof managerData.tacticalStyle.playingStyle) => updateTacticalStyle({ playingStyle: value })}

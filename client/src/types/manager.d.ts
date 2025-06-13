@@ -11,29 +11,20 @@ export type ManagerPersonalDetails = {
 
 export type ManagerAttributes = {
     coaching: {
-        attack: number;
-        defence: number;
+        attacking: number;
+        defending: number;
         fitness: number;
         goalkeeping: number;
         tactical: number;
-        technical: number;
-        mental: number;
+    };
+    scouting: {
+        judgingAbility: number;
+        judgingPotential: number;
     };
     mental: {
-        adaptability: number;
-        determination: number;
-        peopleManagement: number;
-        motivating: number;
-        scouting: number;
         negotiation: number;
-        judgement: number;
-    };
-    knowledge: {
-        youthDevelopment: number;
         manManagement: number;
-        financial: number;
-        medical: number;
-        transferMarket: number;
+        discipline: number;
     };
 };
 
