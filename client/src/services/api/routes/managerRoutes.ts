@@ -5,12 +5,12 @@ import axiosClient from "../config/axiosConfig";
 export const insertNewManager = async (managerData: ManagerData, selectedClub: Club | undefined) => {
     try {
         const response = await axiosClient.post(`/manager/insert`, {
-            nation_id: managerData.personalDetails.nationalityId,
-            first_name: managerData.personalDetails.firstName,
-            last_name: managerData.personalDetails.lastName,
-            birth_date: managerData.personalDetails.dateOfBirth,
+            nationId: managerData.personalDetails.nationalityId,
+            firstName: managerData.personalDetails.firstName,
+            lastName: managerData.personalDetails.lastName,
+            birthDate: managerData.personalDetails.dateOfBirth,
             tacticalStyleId: managerData.tacticalStyle.playingStyle,
-            club_id: selectedClub?.club_id
+            clubId: selectedClub?.club_id
         });
 
         return { success: true, response }
