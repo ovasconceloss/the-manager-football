@@ -4,6 +4,8 @@ import { TacticalFormation, TacticalType } from "@/types/tactical";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { getAllNations } from "@/services/api/routes/nationRoutes";
 import { getCitiesByNation } from "@/services/api/routes/cityRoutes";
+import { insertNewSeason } from "@/services/api/routes/seasonRoutes";
+import { insertNewManager } from "@/services/api/routes/managerRoutes";
 import { ManagerData, ManagerPersonalDetails, ManagerAttributes, TacticalStyle, City } from "@/types/manager";
 import { getAllTacticalFormations, getAllTacticalTypes } from "@/services/api/routes/tacticalRoutes";
 
@@ -226,10 +228,11 @@ export function useManagerCreation() {
         }
         setIsSaving(true);
         try {
-            console.log("Saving manager data:", managerData);
+            await insertNewSeason();
             await new Promise(resolve => setTimeout(resolve, 1500));
-            console.log("Manager saved successfully!");
-            return true;
+            const response = await insertNewManager(managerData, selectedClub);
+
+            return response.success;
         } catch (error) {
             console.error("Error saving manager:", error);
             return false;
