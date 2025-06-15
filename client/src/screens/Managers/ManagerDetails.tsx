@@ -39,7 +39,7 @@ const ManagerDetails: React.FC = () => {
         const success = await saveManager();
 
         if (success === true) {
-            navigate('/game/portal');
+            navigate('/game/home');
         }
     };
 
